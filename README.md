@@ -164,6 +164,6 @@ agentloom-media ui --port 8000
 
 ## Governance & Ecosystem Alignment
 
-This project is an **independent personal open-source research agent** created by [Dr. Boyuan (Keven) Guan (@Keven1894)](https://github.com/Keven1894). It is powered by the [AgentLoom Framework](https://github.com/Keven1894/AgentLoom) and is completely decoupled from FIU institutional production systems.
+MediaLoom is an open-source agent powered by the [AgentLoom Framework](https://github.com/Keven1894/AgentLoom), created by [Dr. Boyuan (Keven) Guan (@Keven1894)](https://github.com/Keven1894).
 
 - **License**: Code is licensed under [MIT](LICENSE). Documentation & Knowledge are licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/).

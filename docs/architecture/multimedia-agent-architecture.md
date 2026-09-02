@@ -4,11 +4,8 @@
 **Date**: 2026-09-02  
 **Author**: Dr. Boyuan (Keven) Guan (@Keven1894) & Envita (Builder Mode)  
 **Parent Framework**: [AgentLoom Framework (v3.0)](https://github.com/Keven1894/AgentLoom)  
-**Project Ownership & Asset Classification**:
-- **Personal Open-Source Research Software** (Repository: `Keven1894/agentloom-agents-multimedia`)
-- **Local Path**: `C:\projects\03_personal-agents\agentloom-agents-multimedia`
-- **NOT an FIU Institutional Asset**: Completely decoupled from FIU production databases (`envita_prod`), FIU internal networking (`10.100.118.x`), and FIU enterprise storage.
-- **License Alignment**: Code under MIT License, Documentation & Knowledge under CC BY-NC 4.0 (identical to AgentLoom).
+**Repository**: `Keven1894/agentloom-agents-multimedia`  
+**License Alignment**: Code under MIT License, Documentation & Knowledge under CC BY-NC 4.0 (identical to AgentLoom).
 
 ---
 
@@ -55,20 +52,20 @@ AgentLoom operates on a four-tier ecosystem divided by lifecycle phase and scope
 │ 3. Runtime Library: agentloom-runtime (Layer 0 memory, search, sync)   │
 └───────────────┬───────────────────────────────────────┬────────────────┘
                 │                                       │
-     instantiates (Enterprise / Private)     instantiates (Personal / Open-Source)
+          instantiates agents                     instantiates agents
                 │                                       │
 ┌───────────────▼──────────────────────┐ ┌──────────────▼───────────────────────────┐
-│ FIU EnviStor / Envita Platform       │ │ agentloom-agents-multimedia (NEW)         │
-│ - Private research data curation     │ │ - Autonomous media learning agent         │
-│ - MySQL envita_prod, MCP :8765       │ │ - YouTube/Podcast -> KG/Skill             │
-│ - FIU institutional asset            │ │ - Open-source repo (Keven1894)            │
-│                                      │ │ - Path: C:\projects\03_personal-agents\...│
+│ Other AgentLoom Instances            │ │ agentloom-agents-multimedia                │
+│ - Domain-specific capabilities       │ │ - Autonomous media learning agent         │
+│ - Agent-native UI and HITL portal    │ │ - YouTube/Podcast -> KG/Skill             │
+│ - Independent governed memory        │ │ - Open-source implementation              │
+│                                      │ │ - Agent-native UI and HITL portal         │
 └──────────────────────────────────────┘ └───────────────────────────────────────────┘
 ```
 
-### Key Decoupling Principles
-- **Clean Namespace**: The repository lives under `Keven1894/agentloom-agents-multimedia` at `C:\projects\03_personal-agents\agentloom-agents-multimedia`.
-- **Zero Proprietary Infrastructure**: It relies solely on open APIs (or local models like Whisper / Ollama) and file-based/SQLite AgentLoom memory.
+### Implementation Principles
+- **Clean Namespace**: The repository lives under `Keven1894/agentloom-agents-multimedia`.
+- **Portable Infrastructure**: It supports open APIs, local models such as Whisper/Ollama, and file-based or SQLite AgentLoom memory.
 - **Framework Feedback**: Enhancements made to multi-modal parsing and knowledge distillation flow back into the core `AgentLoom` framework as reusable patterns.
 
 ---
