@@ -557,7 +557,7 @@
         const container = document.getElementById('proposals-container');
 
         // Update badge
-        const pendingCount = loadedProposals.filter(p => p.status === 'pending').length;
+        const pendingCount = loadedProposals.filter(p => p.status === 'pending' || p.status === 'pending_human_review' || !p.status).length;
         document.getElementById('pending-badge').textContent = pendingCount;
 
         if (loadedProposals.length === 0) {
@@ -569,12 +569,12 @@
         }
 
         container.innerHTML = loadedProposals.map((p, idx) => {
-          const meta = p.metadata || {};
+          const meta = p.source || p.metadata || {};
           const dist = p.distilled || {};
-          const candNodes = dist.candidate_kg_nodes || [];
-          const candSkills = dist.candidate_skills || [];
-          const chapters = dist.chapter_summaries || [];
-          const isPending = (p.status === 'pending');
+          const candNodes = p.candidate_kg_nodes || dist.candidate_kg_nodes || [];
+          const candSkills = p.candidate_skills || dist.candidate_skills || [];
+          const chapters = p.chapter_summaries || dist.chapter_summaries || [];
+          const isPending = (p.status === 'pending' || p.status === 'pending_human_review' || !p.status);
 
           return `
             <div class="bg-slate-900 border ${isPending ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-slate-800 opacity-80'} rounded-2xl p-6 space-y-5">
@@ -584,14 +584,16 @@
                 <div>
                   <div class="flex items-center gap-2 mb-1">
                     <span class="px-2 py-0.5 text-xs font-bold rounded ${isPending ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'} uppercase">
-                      ${p.status || 'Pending'}
+                      ${isPending ? 'Pending Human Review' : (p.status || 'Resolved')}
                     </span>
-                    <span class="text-xs text-slate-400 font-mono">${p.proposal_id}</span>
+                    <span class="text-xs text-slate-400 font-mono">${p.proposal_id || ''}</span>
                   </div>
-                  <h3 class="text-lg font-bold text-white">${meta.title || 'Untitled Proposal'}</h3>
-                  <a href="${meta.url}" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-1">
-                    <i class="fa-brands fa-youtube"></i> ${meta.url}
-                  </a>
+                  <h3 class="text-lg font-bold text-white">${meta.title || 'Multimedia Extraction Proposal'}</h3>
+                  ${meta.url ? `
+                    <a href="${meta.url}" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-1">
+                      <i class="fa-brands fa-youtube"></i> ${meta.url}
+                    </a>
+                  ` : ''}
                 </div>
 
                 <!-- Review Action Buttons -->
@@ -623,7 +625,7 @@
                     ${candNodes.map(cn => `
                       <div class="border-l-2 border-indigo-500 pl-3 py-1">
                         <div class="flex items-center justify-between">
-                          <span class="text-xs font-semibold text-white">${cn.title || cn.id}</span>
+                          <span class="text-xs font-semibold text-white">${cn.title || cn.name || cn.id}</span>
                           <span class="text-[10px] text-slate-500 font-mono">${cn.type}</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">${cn.description || ''}</p>
@@ -643,10 +645,10 @@
                     <i class="fa-solid fa-wrench"></i> Candidate Executable Skills (${candSkills.length})
                   </h4>
                   <div class="space-y-3">
-                    ${candSkills.map(cs => `
+                    ${candSkills.length === 0 ? `<div class="text-xs text-slate-500 py-4">No candidate skills in this proposal.</div>` : candSkills.map(cs => `
                       <div class="border-l-2 border-purple-500 pl-3 py-1">
                         <div class="flex items-center justify-between">
-                          <span class="text-xs font-semibold text-white">${cs.name}</span>
+                          <span class="text-xs font-semibold text-white">${cs.name || cs.title}</span>
                           <span class="text-[10px] text-slate-500">${cs.category || 'Skill'}</span>
                         </div>
                         <p class="text-xs text-slate-400 mt-1">${cs.purpose || ''}</p>
@@ -665,7 +667,7 @@
                   <i class="fa-solid fa-list-check text-indigo-400"></i> Temporal Scaffolding & Chapters Audited (${chapters.length})
                 </h4>
                 <div class="flex flex-wrap gap-2 mt-2">
-                  ${chapters.map(ch => `
+                  ${chapters.length === 0 ? `<div class="text-xs text-slate-500">Video transcript analyzed directly.</div>` : chapters.map(ch => `
                     <a href="${ch.timestamp_anchor}" target="_blank" class="text-xs px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg flex items-center gap-1.5 transition">
                       <i class="fa-regular fa-circle-play text-indigo-400 text-[10px]"></i>
                       <span>${ch.chapter_title}</span>

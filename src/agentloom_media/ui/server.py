@@ -243,7 +243,7 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
     if action == "approve":
         # 1. Promote candidate skills to accepted/
         distilled = proposal_data.get("distilled", {})
-        cand_skills = distilled.get("candidate_skills", [])
+        cand_skills = proposal_data.get("candidate_skills") or distilled.get("candidate_skills", [])
         cand_dir = SKILLS_DIR / "domain" / "candidate"
         acc_dir = SKILLS_DIR / "domain" / "accepted"
         acc_dir.mkdir(parents=True, exist_ok=True)
@@ -251,7 +251,7 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
         promoted_skills = []
         for sk in cand_skills:
             from agentloom_media.proposals.emitter import slugify
-            slug = slugify(sk.get("name", "skill"))
+            slug = slugify(sk.get("name") or sk.get("title", "skill"))
             src_file = cand_dir / f"{slug}.md"
             dst_file = acc_dir / f"{slug}.md"
             if src_file.exists():
@@ -263,27 +263,31 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
                 promoted_skills.append(str(dst_file.name))
 
         # 2. Merge candidate KG nodes into domain-knowledge-graph.json
-        cand_nodes = distilled.get("candidate_kg_nodes", [])
+        cand_nodes = proposal_data.get("candidate_kg_nodes") or distilled.get("candidate_kg_nodes", [])
         domain_kg_path = KG_DIR / "domain-knowledge-graph.json"
         merged_nodes_count = 0
         if domain_kg_path.exists() and cand_nodes:
+            from agentloom_media.proposals.emitter import slugify
             with open(domain_kg_path, "r", encoding="utf-8") as kf:
                 domain_kg = json.load(kf)
 
             existing_ids = {n["id"] for n in domain_kg.get("nodes", [])}
             root_node = next((n for n in domain_kg.get("nodes", []) if n["id"] == "knowledge:domain:root"), None)
 
+            source_meta = proposal_data.get("source") or proposal_data.get("metadata") or {}
+
             for cn in cand_nodes:
-                nid = cn.get("id")
-                if nid and nid not in existing_ids:
+                raw_title = cn.get("title") or cn.get("name") or cn.get("id")
+                clean_id = f"concept:{slugify(raw_title)}"
+                if clean_id not in existing_ids:
                     node_entry = {
-                        "id": nid,
-                        "type": cn.get("type", "concept"),
+                        "id": clean_id,
+                        "type": str(cn.get("type", "concept")).lower(),
                         "data": {
-                            "title": cn.get("title", nid),
+                            "title": raw_title,
                             "description": cn.get("description", ""),
                             "category": "domain-harvested",
-                            "source_url": cn.get("timestamp_anchor") or proposal_data.get("metadata", {}).get("url", ""),
+                            "source_url": cn.get("timestamp_anchor") or source_meta.get("url", ""),
                             "tags": ["domain", "harvested", "hitl-approved"],
                         },
                         "relationships": {
@@ -292,8 +296,9 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
                         }
                     }
                     domain_kg["nodes"].append(node_entry)
-                    if root_node and nid not in root_node["relationships"]["children"]:
-                        root_node["relationships"]["children"].append(nid)
+                    existing_ids.add(clean_id)
+                    if root_node and clean_id not in root_node["relationships"]["children"]:
+                        root_node["relationships"]["children"].append(clean_id)
                     merged_nodes_count += 1
 
             domain_kg["version"] = f"1.0.{len(domain_kg['nodes'])}"
