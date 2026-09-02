@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "graph_name": "agentloom-multimedia-concepts",
+    "version": "1.0.0",
+    "total_nodes": 1,
+    "last_updated": "2026-09-02T15:30:00Z"
+  },
+  "nodes": [
+    {
+      "id": "concept:multimedia-knowledge-ingestion",
+      "type": "concept",
+      "name": "Multimedia Knowledge Ingestion",
+      "description": "The autonomous pipeline and governance pattern for extracting structured knowledge from video/audio streams into AgentLoom 3-track memory.",
+      "tags": ["agentloom", "multimedia", "asr", "transcription", "knowledge-distillation"],
+      "relationships": [
+        {
+          "target": "concept:dual-helix-architecture",
+          "relation": "implements"
+        }
+      ]
+    }
+  ]
+}
