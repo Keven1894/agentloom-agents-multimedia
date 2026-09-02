@@ -211,13 +211,73 @@ The video metadata already contains rich temporal anchors:
 
 ---
 
-## 6. Repository Scaffold (`agentloom-agents-multimedia`)
+## 6. The Agent-Native UI & HITL Review Portal: The AgentLoom HITL Paradigm
 
-The planned open-source repository layout strictly adheres to AgentLoom's **3-Track Architecture**:
+A fundamental architectural tenet of the AgentLoom ecosystem is that **AgentLoom is inherently a Human-in-the-Loop (HITL) Agentic-AI framework**. In AgentLoom, autonomous LLM processing never operates as an unmonitored black box. Knowledge and executable procedures cannot bypass human evaluation to overwrite canonical memory.
+
+To support this governance principle at the micro-agent level, **every AgentLoom agent ships with its own self-contained, native web UI**. Rather than relying solely on monolithic centralized control planes, each agent is an independently deployable micro-harness equipped with a built-in interactive portal (`agentloom-media ui`).
+
+```
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │           Agent-Native Web UI Portal (`agentloom-media ui`)            │
+ ├──────────────────┬──────────────────┬─────────────────┬────────────────┤
+ │  1. Agent        │  2. Data &       │  3. Interactive │  4. Human      │
+ │     Capabilities │     Digest       │     Knowledge   │     Review     │
+ │     Showcase     │     Explorer     │     Graph       │     Portal     │
+ ├──────────────────┼──────────────────┼─────────────────┼────────────────┤
+ │ • Profile & Role │ • Media History  │ • Master Graph  │ • Proposal     │
+ │ • Pipeline Stats │ • Clickable      │ • Builder vs.   │   Queue        │
+ │ • Active Models  │   Transcript     │   Domain views  │ • Evidence     │
+ │ • Toolset &      │ • Track 2 Digest │ • Sub-track     │   Provenance   │
+ │   Heuristics     │   Viewer         │   Filters       │ • Approve /    │
+ │                  │                  │                 │   Reject Gate  │
+ └──────────────────┴──────────────────┴─────────────────┴────────────────┘
+```
+
+### 6.1 Pillar 1: Self-Profile & Capabilities Showcase
+The agent's built-in UI introduces itself, explaining its role, operational envelope, and available toolsets:
+- **Identity & Status**: Displays agent name (`MediaLoom`), role definition, framework version, and environment readiness (e.g., OpenAI API Key status, `ffmpeg` binary detection, cache disk usage).
+- **Pipeline Architecture & Capabilities**: Interactive visual walkthrough of the dual-path ingestion pipeline (Fast Track subtitle extraction vs. Heavy Path audio extraction + Whisper ASR), supported file formats, and distillation capabilities.
+- **Active Skills & Behaviors Catalog**: Live directory of operational `builder` skills (probing, chunking, transcribing, chapter anchoring) and runtime constraints.
+
+### 6.2 Pillar 2: Data & Digest Explorer
+The UI functions as a comprehensive multimedia library and distilled knowledge explorer:
+- **Ingestion History**: Overview of all processed video and audio streams, including titles, durations, channel provenance, audio format specs, and processing timestamps.
+- **Clickable Interactive Transcripts**: Transcripts rendered with synchronized time markers, allowing reviewers to click any sentence to seek directly to the source media at that exact second.
+- **Track 2 Digest Viewer**: Rich Markdown rendering of structured chapter digests, executive takeaways, and thematic deep dives.
+
+### 6.3 Pillar 3: Interactive Dual-Role Knowledge Graph
+Built on topology visualization (e.g., Cytoscape.js / D3), this view renders the agent's multi-graph structure:
+- **Dual-Role Navigation**: Switch seamlessly between **Builder Graph** (the agent's operational meta-knowledge: how it chunks audio and preserves budget) and **Domain Graph** (the substantive knowledge harvested from digested content).
+- **3-Track Filtering**: Toggle between `Knowledge` (concepts and entities), `Skills` (executable procedures), and `Behaviors` (governing rules).
+- **Node Inspector**: Click any node to inspect its category, tags, markdown definition, and outbound relations.
+
+### 6.4 Pillar 4: Human Review Portal (The Core HITL Gate — HIGHLIGHT)
+**This is the central anchor of AgentLoom's governance helix.** The agent never automatically mutates canonical knowledge graphs or registers new operational skills without explicit human approval.
+
+1. **Pending Proposal Queue**:
+   - Lists all candidate proposals generated during the distillation phase (`proposals/proposal-*.json`).
+   - Categorized into **Candidate Knowledge Nodes**, **Candidate Skills (SOPs)**, and **Candidate Behaviors**.
+2. **Evidence & Provenance Auditing**:
+   - Each proposed item displays the exact source transcript excerpt and a clickable timestamp hyperlink (e.g., `https://youtu.be/...&t=492s`).
+   - The human reviewer can verify in seconds whether the distilled conclusion is factual or an LLM hallucination.
+3. **Decisive HITL Action Gates**:
+   - **`Approve`**: Automatically promotes the candidate. A candidate skill is moved from `agents/skills/domain/candidate/` to `agents/skills/domain/accepted/`, and candidate KG nodes are merged into `agents/knowledge-graphs/domain-knowledge-graph.json`.
+   - **`Edit & Approve`**: Allows the human reviewer to refine descriptions, adjust step commands, or fix terminology before merging.
+   - **`Reject`**: Discards speculative or redundant proposals, logging the rejection rationale to prevent the agent from re-proposing identical invalid concepts.
+4. **Immutable Audit Trail**:
+   - Every acceptance or rejection is recorded with timestamp, reviewer ID, and diff summary, satisfying enterprise and research data governance standards.
+
+---
+
+## 7. Repository Scaffold (`agentloom-agents-multimedia`)
+
+The planned open-source repository layout strictly adheres to AgentLoom's **3-Track Architecture & Built-in UI Portal**:
 
 ```text
 agentloom-agents-multimedia/
 ├── .cursor/ rules/                        # Track 1: Guidance Track
+│   ├── core/identity.md                  # Agent identity & mode definition
 │   ├── audio-processing-budget.md        # Size limits, chunking, ASR routing
 │   └── distillation-governance.md        # Timestamp attribution requirements
 ├── docs/                                  # Track 2: Knowledge Track
@@ -228,15 +288,30 @@ agentloom-agents-multimedia/
 │   └── digests/                           # Timestamped video digests & research memos
 │       └── YYYY-MM-DD-<slug>.md
 ├── agents/                                # Track 3: Skills Track (Executable Knowledge)
-│   ├── skills/                            # Distilled executable skills (tutorials -> SOPs)
-│   │   └── candidate/
-│   ├── behaviors/                         # Agent verification rules & constraints
-│   └── knowledge-graphs/                  # Conceptual knowledge graphs & entity networks
-│       ├── domain-concepts-graph.json
-│       └── media-provenance-graph.json
+│   ├── skills/
+│   │   ├── builder/                      # Engine skills (probe, chunk, transcribe, align)
+│   │   └── domain/                       # Harvested skills from tutorials
+│   │       ├── candidate/                # Ingested candidate SOPs pending review
+│   │       └── accepted/                 # Reviewed & approved SOP skills
+│   ├── behaviors/
+│   │   ├── builder/                      # Engine operational rules & constraints
+│   │   └── domain/                       # Domain behavioral rules
+│   └── knowledge-graphs/
+│       ├── master-graph.json             # Master graph registry
+│       ├── builder-knowledge-graph.json  # Engine architecture graph
+│       ├── builder-skills-graph.json     # Engine skills graph
+│       ├── builder-behaviors-graph.json  # Engine behaviors graph
+│       ├── domain-knowledge-graph.json   # Harvested concepts & entities graph
+│       ├── domain-skills-graph.json      # Harvested skills graph
+│       └── domain-behaviors-graph.json   # Domain behaviors graph
 ├── src/agentloom_media/                   # Python Core Package & CLI
 │   ├── __init__.py
-│   ├── cli.py                            # `agentloom-media ingest <url>` entrypoint
+│   ├── cli.py                            # `agentloom-media ingest` & `agentloom-media ui`
+│   ├── ui/                               # Agent-Native Built-in UI & HITL Portal
+│   │   ├── server.py                     # FastAPI backend (Stats, KGs, Proposals, Review API)
+│   │   └── static/                       # Lightweight reactive frontend (Tailwind/Alpine)
+│   │       ├── index.html                # Single-page UI with 4 core pillars
+│   │       └── app.js                    # Dynamic graph visualizer & proposal review logic
 │   ├── acquisition/
 │   │   ├── probe.py                      # Probes video metadata, chapters, streams
 │   │   ├── fast_transcript.py            # Subtitle extraction (YouTube/Vimeo)
@@ -246,10 +321,9 @@ agentloom-agents-multimedia/
 │   │   └── asr.py                        # Whisper API / Local ASR adapter
 │   ├── distillation/
 │   │   ├── chapter_aligner.py            # Chapter & timestamp alignment
-│   │   ├── concept_extractor.py          # Concepts & entities extraction (for KG)
-│   │   └── skill_synthesizer.py          # Procedures & commands extraction (for Skills)
+│   │   └── distiller.py                  # Multi-perspective LLM extraction
 │   └── proposals/
-│       └── emitter.py                    # Emits proposals to AgentLoom Dashboard
+│       └── emitter.py                    # Emits proposals for human review
 ├── proposals/                             # Pending proposals for human review
 ├── tests/
 ├── pyproject.toml                         # Packaging and dependencies
@@ -258,31 +332,37 @@ agentloom-agents-multimedia/
 
 ---
 
-## 7. Open-Source Implementation Roadmap
+## 8. Open-Source Implementation Roadmap
 
-### Phase 1: Core Ingestion & Transcribe CLI (MVP)
-- Implement `agentloom-media ingest <URL>`:
+### Phase 1: Core Ingestion & Transcribe CLI (MVP) - [Completed]
+- Implemented `agentloom-media ingest <URL>`:
   - Probe metadata and check for subtitles.
   - If subtitles exist, download and clean with timestamps.
   - If subtitles disabled, extract audio format 140, downsample/chunk, and transcribe via Whisper.
 - Output raw timestamped transcript JSON and formatted markdown digest.
 
-### Phase 2: AgentLoom Distillation & Propose-Review Integration
-- Build prompt pipelines for the 3 distillation targets:
+### Phase 2: AgentLoom Distillation & Propose-Review Pipeline - [Completed]
+- Built prompt pipelines for the 3 distillation targets:
   1. **Concept & Architecture Memo** (Markdown report).
-  2. **Candidate Knowledge Graph Nodes** (`proposals/node_<slug>.json`).
-  3. **Candidate Executable Skills** (Markdown skill format with preconditions & verification).
-- Integrate with `agentloom.kg.propose_node` so extractions can be reviewed and accepted on the AgentLoom Dashboard (`:8000`).
+  2. **Candidate Knowledge Graph Nodes** (`proposals/proposal-<slug>.json`).
+  3. **Candidate Executable Skills** (Markdown skill format with preconditions & verification in `agents/skills/domain/candidate/`).
 
-### Phase 3: Multimodal Vision & Diagram Capture (Advanced)
+### Phase 3: Agent-Native UI & HITL Review Portal - [In Progress]
+- Implement built-in FastAPI web server (`agentloom-media ui`):
+  - Agent Profile & Capabilities dashboard.
+  - Interactive transcript & digest explorer.
+  - Multi-graph visualization for `builder` and `domain` roles.
+  - Interactive **Human Review Portal** with one-click `Approve` / `Reject` / `Edit` actions to merge candidate knowledge and skills into canonical storage.
+
+### Phase 4: Multimodal Vision & Diagram Capture (Advanced)
 - For technical presentations with architecture slides, extract keyframes at topic shifts using visual frame difference analysis.
 - Run Vision LLM (e.g., Gemini 2.5/3 Pro, GPT-4o) on extracted slide images to extract system architecture diagrams directly into Mermaid/SVG format.
 
 ---
 
-## 8. Conclusion
+## 9. Conclusion
 
-By separating `agentloom-agents-multimedia` as an independent open-source repository under `Keven1894` located at `C:\projects\03_personal-agents\agentloom-agents-multimedia`, we:
-1. Provide a general-purpose, reusable tool for the entire AI builder community.
-2. Maintain strict asset isolation from FIU institutional projects.
-3. Solve the single most time-consuming bottleneck in knowledge transfer: empowering agents to independently "listen", "watch", and "learn" from multimedia sources with full provenance and governance.
+By defining that **every AgentLoom agent ships with its own native UI and HITL portal**, we solidify AgentLoom as a premier human-in-the-loop framework:
+1. **Explainable & Autonomous**: The agent communicates what it is, what tools it possesses, and what it has processed.
+2. **True Human-in-the-Loop Governance**: Knowledge never mutates without human verification, with direct timestamp links grounding every claim back to empirical video/audio evidence.
+3. **Zero Configuration**: A developer or researcher clones the agent and immediately has both an autonomous CLI pipeline and an intuitive human review dashboard out-of-the-box.

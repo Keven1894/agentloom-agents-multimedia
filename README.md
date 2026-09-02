@@ -73,7 +73,10 @@ agentloom-agents-multimedia/
 │       ├── domain-skills-graph.json      # Harvested skills graph
 │       └── domain-behaviors-graph.json   # Domain behaviors graph
 ├── src/agentloom_media/                  # Python Framework & CLI
-│   ├── cli.py                            # `agentloom-media ingest <url>` entrypoint
+│   ├── cli.py                            # `agentloom-media ingest` & `agentloom-media ui`
+│   ├── ui/                               # Built-in Agent Portal & Review Webapp
+│   │   ├── server.py                     # FastAPI REST API (Profile, Data, KG, Review)
+│   │   └── static/                       # Reactive single-page web portal (index.html)
 │   ├── acquisition/                      # Probing, fast subtitles, stream extraction
 │   ├── audio/                            # Audio chunker & Whisper/ASR adapters
 │   ├── distillation/                     # Chapter alignment, concepts, and skills
@@ -82,6 +85,34 @@ agentloom-agents-multimedia/
 ├── pyproject.toml
 └── README.md
 ```
+
+---
+
+## Agent-Native UI & Human-in-the-Loop (HITL) Portal
+
+A core architectural principle of AgentLoom is that **AgentLoom is inherently a Human-in-the-Loop (HITL) Agentic-AI framework**. Every AgentLoom agent ships with its own self-contained, out-of-the-box web portal (`agentloom-media ui`):
+
+```
+ ┌────────────────────────────────────────────────────────────────────────┐
+ │           Agent-Native Web UI Portal (`agentloom-media ui`)            │
+ ├──────────────────┬──────────────────┬─────────────────┬────────────────┤
+ │  1. Agent        │  2. Data &       │  3. Interactive │  4. Human      │
+ │     Capabilities │     Digest       │     Knowledge   │     Review     │
+ │     Showcase     │     Explorer     │     Graph       │     Portal     │
+ ├──────────────────┼──────────────────┼─────────────────┼────────────────┤
+ │ • Profile & Role │ • Media History  │ • Master Graph  │ • Proposal     │
+ │ • Pipeline Stats │ • Clickable      │ • Builder vs.   │   Queue        │
+ │ • Active Models  │   Transcript     │   Domain views  │ • Evidence     │
+ │ • Toolset &      │ • Track 2 Digest │ • Sub-track     │   Provenance   │
+ │   Heuristics     │   Viewer         │   Filters       │ • Approve /    │
+ │                  │                  │                 │   Reject Gate  │
+ └──────────────────┴──────────────────┴─────────────────┴────────────────┘
+```
+
+1. **Self-Profile & Capabilities Showcase**: Introduces the agent's identity, role definitions (`builder` vs. `domain`), environment readiness, and live capability status.
+2. **Data & Digest Explorer**: Archives all processed multimedia, providing interactive clickable-transcript readers and Track 2 structured chapter digests.
+3. **Interactive 3-Track Knowledge Graph**: Explores `role-builder` (operational meta-knowledge) and `role-domain` (harvested concepts and causal models) across Knowledge, Skills, and Behaviors.
+4. **Human Review Portal (THE CORE HITL GATE)**: Queues all candidate extractions in `proposals/`. Human reviewers audit claims against source video timestamps (`?t=...s`) and execute one-click **Approve** (auto-promoted into canonical graphs and accepted skills) or **Reject** decisions.
 
 ---
 
@@ -120,6 +151,13 @@ agentloom-media ingest "https://www.youtube.com/watch?v=R_PMTlFn0TQ"
 # Output:
 # - Track 2 Digest: docs/digests/YYYY-MM-DD-<slug>.md
 # - Track 3 Candidate KG / Skills: proposals/proposal-<id>.json
+```
+
+### 4. Launch Built-in UI & HITL Review Portal
+
+```bash
+agentloom-media ui --port 8000
+# Open http://localhost:8000 in your browser to inspect and audit extractions
 ```
 
 ---

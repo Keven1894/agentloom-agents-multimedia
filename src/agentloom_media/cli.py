@@ -113,5 +113,23 @@ def ingest(url: str, output_dir: str, model: str):
         console.print(f"  - [bold]{k}[/bold]: {v}")
 
 
+@main.command()
+@click.option("--host", default="127.0.0.1", help="Host to bind the portal server to.")
+@click.option("--port", default=8000, type=int, help="Port to listen on.")
+@click.option("--reload", is_flag=True, default=False, help="Enable auto-reload for development.")
+def ui(host: str, port: int, reload: bool):
+    """Launch the Agent-Native Built-in UI & HITL Review Portal."""
+    import uvicorn
+    console.print(Panel(
+        f"[bold green]MediaLoom Built-in Portal & HITL Review Gateway[/bold green]\n"
+        f"• Local URL: [bold cyan]http://{host}:{port}[/bold cyan]\n"
+        f"• Paradigm:  [bold yellow]AgentLoom Human-in-the-Loop (HITL) Governance[/bold yellow]\n"
+        f"• Features:  Profile Showcase, Data Digests, 3-Track KG, Proposal Review",
+        expand=False
+    ))
+    uvicorn.run("agentloom_media.ui.server:app", host=host, port=port, reload=reload)
+
+
 if __name__ == "__main__":
     main()
+

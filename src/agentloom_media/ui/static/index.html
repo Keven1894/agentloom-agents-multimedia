@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediaLoom — AgentLoom HITL Agent Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
+
+  <!-- Top Navbar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+          <i class="fa-solid fa-brain text-white text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg tracking-tight text-white">MediaLoom</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">v0.1.0</span>
+            <span class="px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> HITL Autonomous
+            </span>
+          </div>
+          <p class="text-xs text-slate-400">AgentLoom Dual-Helix Multimedia Ingestion & HITL Review Engine</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex space-x-1">
+        <button onclick="switchTab('profile')" id="tab-btn-profile" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+          <i class="fa-solid fa-id-card text-xs"></i> Agent Profile
+        </button>
+        <button onclick="switchTab('data')" id="tab-btn-data" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+          <i class="fa-solid fa-photo-film text-xs"></i> Data & Digests
+        </button>
+        <button onclick="switchTab('kg')" id="tab-btn-kg" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
+          <i class="fa-solid fa-network-wired text-xs"></i> 3-Track KG
+        </button>
+        <button onclick="switchTab('review')" id="tab-btn-review" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-500/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-user-check text-xs"></i>
+          <span>Human Review Portal</span>
+          <span id="pending-badge" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-400 text-slate-950">0</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: AGENT PROFILE & CAPABILITIES        -->
+    <!-- ========================================== -->
+    <div id="tab-profile" class="tab-pane hidden space-y-6">
+      <!-- Agent Intro Banner -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden">
+        <div class="max-w-3xl">
+          <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold mb-3">
+            <i class="fa-solid fa-dna"></i> AgentLoom Dual-Helix Framework
+          </div>
+          <h1 class="text-2xl font-bold text-white mb-2">Autonomous Multimedia Learning Agent</h1>
+          <p class="text-slate-300 text-sm leading-relaxed">
+            MediaLoom operates autonomously to acquire, probe, compress, transcribe, and distill knowledge from videos and podcasts. Built natively upon AgentLoom's dual-helix paradigm, it combines a high-speed <strong>Learning Helix</strong> with a strict human-governed <strong>Governance Helix</strong>, ensuring no LLM speculation bypasses empirical verification.
+          </p>
+        </div>
+      </div>
+
+      <!-- Live Environment Readiness & Metrics Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="profile-metrics-grid">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Pipeline Capabilities Showcase -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <i class="fa-solid fa-gears text-indigo-400"></i> Integrated Ingestion & Distillation Capabilities
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="capabilities-grid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
+      <!-- Two-Role Architecture Explanation -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold">B</div>
+            <div>
+              <h3 class="font-bold text-white">Builder Role (`role-builder`)</h3>
+              <p class="text-xs text-slate-400">"How I Learn" — Operational Meta-Knowledge</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Stable engine capabilities: stream format negotiation, 16kHz downsampling heuristics, Whisper ASR budget enforcement (24MB limit), chapter marker alignment, and verifiable timestamp generation.
+          </p>
+          <div class="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+            Path: agents/knowledge-graphs/builder-*-graph.json<br>
+            Skills: probe, chunking-compression, whisper-asr, chapter-anchoring
+          </div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div class="flex items-center gap-3 mb-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold">D</div>
+            <div>
+              <h3 class="font-bold text-white">Domain Role (`role-domain`)</h3>
+              <p class="text-xs text-slate-400">"What I Learned" — Harvested Domain Intelligence</p>
+            </div>
+          </div>
+          <p class="text-xs text-slate-300 leading-relaxed mb-4">
+            Substantive concepts, causal theories, historical parallels, and executable tutorial SOPs extracted from ingested media. Strictly governed by the <strong>Human Review Gate</strong>.
+          </p>
+          <div class="text-xs font-mono text-slate-400 bg-slate-950 p-3 rounded-lg border border-slate-800/80">
+            Path: agents/knowledge-graphs/domain-*-graph.json<br>
+            Skills: domain/candidate/ (pending) → domain/accepted/ (approved)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: DATA & DIGESTS EXPLORER             -->
+    <!-- ========================================== -->
+    <div id="tab-data" class="tab-pane hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-white">Processed Media & Track 2 Digests</h1>
+          <p class="text-xs text-slate-400">Structured chapter breakdowns, key takeaways, and hyperlinked timestamp digests</p>
+        </div>
+        <button onclick="loadDigests()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-2">
+          <i class="fa-solid fa-arrows-rotate"></i> Refresh
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Digest List -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[700px]">
+          <h2 class="text-sm font-semibold text-slate-300 mb-3 px-1 flex items-center gap-2">
+            <i class="fa-solid fa-folder-open text-indigo-400"></i> Digest Archives
+          </h2>
+          <div id="digests-list" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Digest Preview & Reader -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col h-[700px] overflow-hidden">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
+            <div id="digest-viewer-header">
+              <h2 class="font-bold text-white text-base">Select a digest to read</h2>
+              <span class="text-xs text-slate-500">Track 2 Domain Knowledge Record</span>
+            </div>
+            <a id="digest-external-link" href="#" target="_blank" class="hidden text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Source Media
+            </a>
+          </div>
+          <div id="digest-markdown-body" class="flex-1 overflow-y-auto custom-scroll prose prose-invert prose-indigo max-w-none text-slate-300 text-sm leading-relaxed pr-2">
+            <div class="text-center py-20 text-slate-500">
+              <i class="fa-regular fa-file-lines text-4xl mb-3 block opacity-40"></i>
+              Choose a processed multimedia digest from the left panel to inspect the timestamp-anchored synthesis.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: 3-TRACK KNOWLEDGE GRAPH             -->
+    <!-- ========================================== -->
+    <div id="tab-kg" class="tab-pane hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-white">3-Track Dual-Role Knowledge Graph</h1>
+          <p class="text-xs text-slate-400">Decoupled visualization of Builder (Engine) and Domain (Harvested) conceptual graphs</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <!-- Role selector -->
+          <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+            <button onclick="setKgView('builder')" id="kg-role-builder" class="px-3 py-1 rounded-md font-medium text-slate-400 hover:text-white transition">Builder Role</button>
+            <button onclick="setKgView('domain')" id="kg-role-domain" class="px-3 py-1 rounded-md font-medium bg-indigo-600 text-white transition">Domain Role</button>
+          </div>
+          <!-- Track selector -->
+          <div class="flex bg-slate-900 border border-slate-800 rounded-lg p-0.5 text-xs">
+            <button onclick="setKgTrack('knowledge')" id="kg-track-knowledge" class="px-2.5 py-1 rounded-md bg-slate-800 text-indigo-300 font-medium">Knowledge</button>
+            <button onclick="setKgTrack('skills')" id="kg-track-skills" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white font-medium">Skills</button>
+            <button onclick="setKgTrack('behaviors')" id="kg-track-behaviors" class="px-2.5 py-1 rounded-md text-slate-400 hover:text-white font-medium">Behaviors</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph Cards Container -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 min-h-[550px] flex flex-col">
+          <div class="flex items-center justify-between mb-4">
+            <h2 id="kg-current-title" class="font-bold text-white text-sm flex items-center gap-2">
+              <i class="fa-solid fa-circle-nodes text-indigo-400"></i> Nodes in Graph
+            </h2>
+            <span id="kg-node-count" class="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">0 nodes</span>
+          </div>
+          <div id="kg-nodes-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3 overflow-y-auto custom-scroll max-h-[480px] pr-1">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Node Inspector Detail -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col min-h-[550px]">
+          <h2 class="text-sm font-bold text-slate-300 mb-4 pb-2 border-b border-slate-800 flex items-center gap-2">
+            <i class="fa-solid fa-circle-info text-indigo-400"></i> Node Inspector
+          </h2>
+          <div id="node-inspector-content" class="flex-1 space-y-4 text-xs text-slate-300">
+            <div class="text-center py-24 text-slate-500">
+              <i class="fa-regular fa-hand-pointer text-3xl mb-2 block opacity-40"></i>
+              Click on any node on the left to inspect its category, tags, description, and source links.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: HUMAN REVIEW PORTAL (THE HITL GATE) -->
+    <!-- ========================================== -->
+    <div id="tab-review" class="tab-pane space-y-6">
+      <!-- Portal Highlight Banner -->
+      <div class="bg-gradient-to-r from-amber-950/40 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-2xl p-6">
+        <div class="flex items-start justify-between">
+          <div class="max-w-3xl">
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
+              <i class="fa-solid fa-shield-halved"></i> AgentLoom Core Governance Invariant
+            </div>
+            <h1 class="text-2xl font-bold text-white mb-2">Human-in-the-Loop Review Portal</h1>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              In the AgentLoom paradigm, autonomous extraction does not equal authoritative memory. All candidate knowledge graph nodes, distilled procedural skills, and behavior rules are queued as <strong>Proposals</strong>. Human experts must audit provenance and sign off before promotion into canonical memory.
+            </p>
+          </div>
+          <button onclick="loadProposals()" class="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl border border-amber-500/40 text-xs font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh Queue
+          </button>
+        </div>
+      </div>
+
+      <!-- Proposals List & Action View -->
+      <div class="space-y-4" id="proposals-container">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 bg-slate-800 border border-slate-700 text-white px-4 py-3 rounded-xl shadow-2xl transform transition duration-300 translate-y-20 opacity-0 flex items-center gap-3 z-50 text-sm">
+    <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toast-message">Action successful</span>
+  </div>
+
+  <script>
+    let currentRole = 'domain';
+    let currentTrack = 'knowledge';
+    let loadedProposals = [];
+
+    // Switch Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-pane').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-md');
+        btn.classList.add('text-slate-300');
+      });
+
+      const pane = document.getElementById(`tab-${tabId}`);
+      if (pane) pane.classList.remove('hidden');
+
+      const btn = document.getElementById(`tab-btn-${tabId}`);
+      if (btn) {
+        btn.classList.remove('text-slate-300');
+        btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
+      }
+
+      if (tabId === 'profile') loadProfile();
+      if (tabId === 'data') loadDigests();
+      if (tabId === 'kg') loadKg();
+      if (tabId === 'review') loadProposals();
+    }
+
+    // Show Toast
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+      toastMsg.textContent = msg;
+      if (isError) {
+        toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400";
+      } else {
+        toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+      }
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3500);
+    }
+
+    // 1. Profile Loader
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/profile');
+        const data = await res.json();
+        
+        // Render Metrics
+        const m = data.metrics;
+        const e = data.environment;
+        const grid = document.getElementById('profile-metrics-grid');
+        grid.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <span class="text-xs text-slate-400">Pending Review Proposals</span>
+            <div class="text-2xl font-bold text-amber-400 mt-1">${m.pending_proposals}</div>
+            <span class="text-[10px] text-slate-500">Awaiting HITL gate</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <span class="text-xs text-slate-400">Harvested Digests</span>
+            <div class="text-2xl font-bold text-indigo-400 mt-1">${m.total_digests}</div>
+            <span class="text-[10px] text-slate-500">Track 2 records</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <span class="text-xs text-slate-400">Accepted Domain Skills</span>
+            <div class="text-2xl font-bold text-emerald-400 mt-1">${m.accepted_skills}</div>
+            <span class="text-[10px] text-slate-500">${m.candidate_skills} candidate skills</span>
+          </div>
+          <div class="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <span class="text-xs text-slate-400">Environment Ready</span>
+            <div class="text-lg font-bold text-white mt-1 flex items-center gap-2">
+              <span class="${e.openai_api_configured ? 'text-emerald-400' : 'text-rose-400'} text-xs">
+                ${e.openai_api_configured ? '● OpenAI' : '○ Missing Key'}
+              </span>
+              <span class="${e.ffmpeg_ready ? 'text-emerald-400' : 'text-rose-400'} text-xs">
+                ${e.ffmpeg_ready ? '● FFmpeg' : '○ No FFmpeg'}
+              </span>
+            </div>
+            <span class="text-[10px] text-slate-500">${m.cached_audio_mb} MB audio cache</span>
+          </div>
+        `;
+
+        // Render Capabilities
+        const capGrid = document.getElementById('capabilities-grid');
+        capGrid.innerHTML = data.capabilities.map(c => `
+          <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-4">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="font-semibold text-white text-sm">${c.name}</h4>
+              <span class="px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">${c.description}</p>
+          </div>
+        `).join('');
+
+        // Update badge
+        document.getElementById('pending-badge').textContent = m.pending_proposals;
+
+      } catch (err) {
+        console.error('Failed to load profile:', err);
+      }
+    }
+
+    // 2. Data & Digests
+    async function loadDigests() {
+      try {
+        const res = await fetch('/api/data/digests');
+        const digests = await res.json();
+        const listEl = document.getElementById('digests-list');
+
+        if (digests.length === 0) {
+          listEl.innerHTML = `<div class="text-xs text-slate-500 p-4 text-center">No digests processed yet.</div>`;
+          return;
+        }
+
+        listEl.innerHTML = digests.map((d, idx) => `
+          <div onclick="readDigest('${d.filename}', '${encodeURIComponent(d.title)}', '${encodeURIComponent(d.source_url)}')" class="p-3 bg-slate-950/60 hover:bg-slate-800/70 border border-slate-800 rounded-xl cursor-pointer transition">
+            <h4 class="text-xs font-semibold text-white line-clamp-2 mb-1.5">${d.title}</h4>
+            <div class="flex items-center justify-between text-[10px] text-slate-400">
+              <span><i class="fa-regular fa-clock mr-1"></i>${d.modified_at}</span>
+              <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${d.size_kb} KB</span>
+            </div>
+          </div>
+        `).join('');
+
+        if (digests.length > 0) {
+          readDigest(digests[0].filename, encodeURIComponent(digests[0].title), encodeURIComponent(digests[0].source_url));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function readDigest(filename, title, sourceUrl) {
+      try {
+        const res = await fetch(`/api/data/digest/${filename}`);
+        const data = await res.json();
+        
+        document.getElementById('digest-viewer-header').innerHTML = `
+          <h2 class="font-bold text-white text-base">${decodeURIComponent(title)}</h2>
+          <span class="text-xs text-slate-400">${filename}</span>
+        `;
+
+        const extBtn = document.getElementById('digest-external-link');
+        const url = decodeURIComponent(sourceUrl);
+        if (url && url !== "undefined") {
+          extBtn.href = url;
+          extBtn.classList.remove('hidden');
+        } else {
+          extBtn.classList.add('hidden');
+        }
+
+        document.getElementById('digest-markdown-body').innerHTML = marked.parse(data.content);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // 3. Knowledge Graph
+    function setKgView(role) {
+      currentRole = role;
+      document.getElementById('kg-role-builder').className = role === 'builder' ? 'px-3 py-1 rounded-md font-medium bg-indigo-600 text-white transition' : 'px-3 py-1 rounded-md font-medium text-slate-400 hover:text-white transition';
+      document.getElementById('kg-role-domain').className = role === 'domain' ? 'px-3 py-1 rounded-md font-medium bg-indigo-600 text-white transition' : 'px-3 py-1 rounded-md font-medium text-slate-400 hover:text-white transition';
+      loadKg();
+    }
+
+    function setKgTrack(track) {
+      currentTrack = track;
+      ['knowledge', 'skills', 'behaviors'].forEach(t => {
+        const el = document.getElementById(`kg-track-${t}`);
+        if (t === track) {
+          el.className = "px-2.5 py-1 rounded-md bg-slate-800 text-indigo-300 font-medium";
+        } else {
+          el.className = "px-2.5 py-1 rounded-md text-slate-400 hover:text-white font-medium";
+        }
+      });
+      loadKg();
+    }
+
+    async function loadKg() {
+      try {
+        const res = await fetch(`/api/kg/graph/${currentRole}/${currentTrack}`);
+        const data = await res.json();
+
+        document.getElementById('kg-current-title').innerHTML = `
+          <i class="fa-solid fa-circle-nodes text-indigo-400"></i> ${data.description || `${currentRole} - ${currentTrack}`}
+        `;
+
+        const nodes = data.nodes || [];
+        document.getElementById('kg-node-count').textContent = `${nodes.length} nodes`;
+
+        const container = document.getElementById('kg-nodes-container');
+        if (nodes.length === 0) {
+          container.innerHTML = `<div class="text-xs text-slate-500 col-span-2 text-center py-10">No nodes defined in this track.</div>`;
+          return;
+        }
+
+        container.innerHTML = nodes.map((node, i) => {
+          const d = node.data || {};
+          const title = d.title || node.id;
+          const cat = d.category || node.type;
+          return `
+            <div onclick='inspectNode(${JSON.stringify(node).replace(/'/g, "&#39;")})' class="p-3 bg-slate-950/60 hover:bg-slate-800/80 border border-slate-800 rounded-xl cursor-pointer transition">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[10px] font-mono text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded border border-indigo-500/20">${node.type}</span>
+                <span class="text-[10px] text-slate-500">${cat}</span>
+              </div>
+              <h4 class="text-xs font-semibold text-white mb-1 line-clamp-1">${title}</h4>
+              <p class="text-[11px] text-slate-400 line-clamp-2">${d.description || ''}</p>
+            </div>
+          `;
+        }).join('');
+
+        if (nodes.length > 0) {
+          inspectNode(nodes[0]);
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function inspectNode(node) {
+      const d = node.data || {};
+      const rel = node.relationships || {};
+      const el = document.getElementById('node-inspector-content');
+
+      let tagsHtml = (d.tags || []).map(t => `<span class="bg-slate-800 text-slate-300 px-2 py-0.5 rounded text-[10px]">${t}</span>`).join(' ');
+
+      el.innerHTML = `
+        <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+          <span class="text-[10px] font-mono text-indigo-400 uppercase tracking-wider">${node.type}</span>
+          <h3 class="text-sm font-bold text-white mt-1">${d.title || node.id}</h3>
+          <p class="text-slate-400 text-xs mt-1 font-mono">${node.id}</p>
+        </div>
+
+        <div>
+          <h4 class="font-semibold text-slate-400 mb-1">Description</h4>
+          <p class="text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800">${d.description || 'No description provided.'}</p>
+        </div>
+
+        ${d.source_url ? `
+          <div>
+            <h4 class="font-semibold text-slate-400 mb-1">Evidence & Source Anchor</h4>
+            <a href="${d.source_url}" target="_blank" class="text-indigo-400 hover:underline flex items-center gap-1.5 break-all">
+              <i class="fa-solid fa-link text-[10px]"></i> ${d.source_url}
+            </a>
+          </div>
+        ` : ''}
+
+        ${tagsHtml ? `
+          <div>
+            <h4 class="font-semibold text-slate-400 mb-1">Tags</h4>
+            <div class="flex flex-wrap gap-1">${tagsHtml}</div>
+          </div>
+        ` : ''}
+
+        <div>
+          <h4 class="font-semibold text-slate-400 mb-1">Relationships</h4>
+          <div class="text-[11px] text-slate-400 space-y-1">
+            <div>Parent: <span class="font-mono text-slate-300">${rel.parent || 'None (Root)'}</span></div>
+            <div>Children: <span class="font-mono text-slate-300">${(rel.children || []).length} connected</span></div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 4. Human Review Portal
+    async function loadProposals() {
+      try {
+        const res = await fetch('/api/proposals');
+        loadedProposals = await res.json();
+        const container = document.getElementById('proposals-container');
+
+        // Update badge
+        const pendingCount = loadedProposals.filter(p => p.status === 'pending').length;
+        document.getElementById('pending-badge').textContent = pendingCount;
+
+        if (loadedProposals.length === 0) {
+          container.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500">
+            <i class="fa-solid fa-check-double text-4xl mb-3 block text-emerald-400 opacity-60"></i>
+            All candidate extractions have been reviewed and resolved!
+          </div>`;
+          return;
+        }
+
+        container.innerHTML = loadedProposals.map((p, idx) => {
+          const meta = p.metadata || {};
+          const dist = p.distilled || {};
+          const candNodes = dist.candidate_kg_nodes || [];
+          const candSkills = dist.candidate_skills || [];
+          const chapters = dist.chapter_summaries || [];
+          const isPending = (p.status === 'pending');
+
+          return `
+            <div class="bg-slate-900 border ${isPending ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-slate-800 opacity-80'} rounded-2xl p-6 space-y-5">
+              
+              <!-- Proposal Header -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="px-2 py-0.5 text-xs font-bold rounded ${isPending ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'} uppercase">
+                      ${p.status || 'Pending'}
+                    </span>
+                    <span class="text-xs text-slate-400 font-mono">${p.proposal_id}</span>
+                  </div>
+                  <h3 class="text-lg font-bold text-white">${meta.title || 'Untitled Proposal'}</h3>
+                  <a href="${meta.url}" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-1">
+                    <i class="fa-brands fa-youtube"></i> ${meta.url}
+                  </a>
+                </div>
+
+                <!-- Review Action Buttons -->
+                ${isPending ? `
+                  <div class="flex items-center gap-2">
+                    <button onclick="submitReview('${p._file_name}', 'approve')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition">
+                      <i class="fa-solid fa-check"></i> Approve & Canonize
+                    </button>
+                    <button onclick="submitReview('${p._file_name}', 'reject')" class="px-3 py-2 bg-slate-800 hover:bg-rose-900/40 text-rose-300 border border-slate-700 hover:border-rose-500/40 rounded-xl text-xs font-semibold transition">
+                      <i class="fa-solid fa-xmark"></i> Reject
+                    </button>
+                  </div>
+                ` : `
+                  <div class="text-right text-xs">
+                    <span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end"><i class="fa-solid fa-circle-check"></i> Resolved</span>
+                    <span class="text-slate-500 text-[10px]">Promoted to Canonical Track</span>
+                  </div>
+                `}
+              </div>
+
+              <!-- Distilled Highlights Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Candidate KG Nodes -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+                  <h4 class="text-xs font-bold text-amber-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i class="fa-solid fa-circle-nodes"></i> Candidate KG Nodes (${candNodes.length})
+                  </h4>
+                  <div class="space-y-3">
+                    ${candNodes.map(cn => `
+                      <div class="border-l-2 border-indigo-500 pl-3 py-1">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-semibold text-white">${cn.title || cn.id}</span>
+                          <span class="text-[10px] text-slate-500 font-mono">${cn.type}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">${cn.description || ''}</p>
+                        ${cn.timestamp_anchor ? `
+                          <a href="${cn.timestamp_anchor}" target="_blank" class="text-[11px] text-indigo-400 hover:underline mt-1.5 inline-flex items-center gap-1">
+                            <i class="fa-regular fa-clock"></i> Jump to Evidence Timestamp
+                          </a>
+                        ` : ''}
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+
+                <!-- Candidate Executable Skills -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
+                  <h4 class="text-xs font-bold text-purple-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+                    <i class="fa-solid fa-wrench"></i> Candidate Executable Skills (${candSkills.length})
+                  </h4>
+                  <div class="space-y-3">
+                    ${candSkills.map(cs => `
+                      <div class="border-l-2 border-purple-500 pl-3 py-1">
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-semibold text-white">${cs.name}</span>
+                          <span class="text-[10px] text-slate-500">${cs.category || 'Skill'}</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">${cs.purpose || ''}</p>
+                        <div class="mt-2 text-[10px] text-slate-500">
+                          Preconditions: ${(cs.preconditions || []).join(', ') || 'None'}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chapter Alignment & Proof of Provenance -->
+              <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
+                <h4 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
+                  <i class="fa-solid fa-list-check text-indigo-400"></i> Temporal Scaffolding & Chapters Audited (${chapters.length})
+                </h4>
+                <div class="flex flex-wrap gap-2 mt-2">
+                  ${chapters.map(ch => `
+                    <a href="${ch.timestamp_anchor}" target="_blank" class="text-xs px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg flex items-center gap-1.5 transition">
+                      <i class="fa-regular fa-circle-play text-indigo-400 text-[10px]"></i>
+                      <span>${ch.chapter_title}</span>
+                    </a>
+                  `).join('')}
+                </div>
+              </div>
+
+            </div>
+          `;
+        }).join('');
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Submit Review Action
+    async function submitReview(proposalFileName, action) {
+      if (!confirm(`Are you sure you want to ${action.toUpperCase()} this proposal?`)) return;
+
+      try {
+        const res = await fetch(`/api/proposals/${proposalFileName}/review`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: action,
+            reviewer: "Keven (Human Operator)",
+            notes: `Reviewed and ${action}ed via MediaLoom HITL Portal`
+          })
+        });
+        const result = await res.json();
+        if (result.ok) {
+          showToast(`Proposal successfully ${action}ed! Promoted knowledge merged into canonical memory.`);
+          loadProposals();
+        } else {
+          showToast('Failed to process review', true);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Error communicating with portal server', true);
+      }
+    }
+
+    // Initialize default tab
+    document.addEventListener('DOMContentLoaded', () => {
+      switchTab('review');
+    });
+  </script>
+</body>
+</html>
