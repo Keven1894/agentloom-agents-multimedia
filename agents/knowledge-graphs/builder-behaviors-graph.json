@@ -1,0 +1,56 @@
+{
+  "graphType": "behaviors",
+  "role": "role-builder",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "MediaLoom Engine Behaviors Graph — Rules, constraints, and attribution standards",
+  "nodes": [
+    {
+      "id": "behavior:builder:root",
+      "type": "root",
+      "data": {
+        "title": "MediaLoom Engine Behaviors Root",
+        "description": "Root of operational rules and constraints governing MediaLoom.",
+        "category": "builder-meta"
+      },
+      "relationships": {
+        "parent": null,
+        "children": [
+          "behavior:builder:audio-budget-constraint",
+          "behavior:builder:timestamp-anchoring-rule"
+        ]
+      }
+    },
+    {
+      "id": "behavior:builder:audio-budget-constraint",
+      "type": "rule",
+      "data": {
+        "title": "Audio Budget & Size Constraints",
+        "description": "Enforce format 140 preference, 24MB API boundary, and intermediate chunk cleanup.",
+        "category": "governance",
+        "path": "agents/behaviors/builder/audio-budget-constraint.md",
+        "tags": ["builder", "behavior", "budget", "limits"]
+      },
+      "relationships": {
+        "parent": "behavior:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "behavior:builder:timestamp-anchoring-rule",
+      "type": "rule",
+      "data": {
+        "title": "Temporal Provenance & Timestamp Anchoring",
+        "description": "Require verifiable timestamp URLs on all extracted claims and reject ungrounded assertions.",
+        "category": "governance",
+        "path": "agents/behaviors/builder/timestamp-anchoring-rule.md",
+        "tags": ["builder", "behavior", "provenance", "anchoring"]
+      },
+      "relationships": {
+        "parent": "behavior:builder:root",
+        "children": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "graphType": "master",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "Master registry for MediaLoom: two roles (builder + domain), each carrying its own 3-track KG (skills + knowledge + behaviors). The dashboard connects role roots into a single coherent graph.",
+  "rootNodeId": "agentloom:medialoom:root",
+  "rootNodeLabel": "AgentLoom MediaLoom",
+  "roles": [
+    {
+      "id": "role-builder",
+      "name": "Builder (MediaLoom Engine)",
+      "description": "Knows how to acquire, probe, chunk, transcribe, and distill multimedia. Stable; evolves when ingestion techniques, models, or protocols upgrade.",
+      "graphs": [
+        {
+          "id": "builder-knowledge",
+          "path": "agents/knowledge-graphs/builder-knowledge-graph.json",
+          "rootNodeId": "knowledge:builder:root",
+          "description": "Engine architecture, dual-path ASR strategy, audio chunking heuristics, and chapter scaffolding."
+        },
+        {
+          "id": "builder-skills",
+          "path": "agents/knowledge-graphs/builder-skills-graph.json",
+          "rootNodeId": "skill:builder:root",
+          "description": "Executable engine skills: probe-media-stream, audio-chunking-compression, whisper-asr-transcription, chapter-alignment-anchoring."
+        },
+        {
+          "id": "builder-behaviors",
+          "path": "agents/knowledge-graphs/builder-behaviors-graph.json",
+          "rootNodeId": "behavior:builder:root",
+          "description": "Engine behaviors: audio-budget-constraint (24MB limit, format 140 preference), timestamp-anchoring-rule."
+        }
+      ]
+    },
+    {
+      "id": "role-domain",
+      "name": "Domain (Harvested Knowledge)",
+      "description": "What the agent learns from ingested videos and media sources. Grows dynamically via propose-review.",
+      "graphs": [
+        {
+          "id": "domain-knowledge",
+          "path": "agents/knowledge-graphs/domain-knowledge-graph.json",
+          "rootNodeId": "knowledge:domain:root",
+          "description": "Concepts, theories, causal models, and historical parallels extracted from multimedia."
+        },
+        {
+          "id": "domain-skills",
+          "path": "agents/knowledge-graphs/domain-skills-graph.json",
+          "rootNodeId": "skill:domain:root",
+          "description": "Domain-side reusable skills (candidate and accepted SOPs distilled from tutorial videos)."
+        },
+        {
+          "id": "domain-behaviors",
+          "path": "agents/knowledge-graphs/domain-behaviors-graph.json",
+          "rootNodeId": "behavior:domain:root",
+          "description": "Domain-specific policies and constraints learned from digested content."
+        }
+      ]
+    }
+  ]
+}

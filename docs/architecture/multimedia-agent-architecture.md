@@ -89,18 +89,26 @@ Like all governed AgentLoom instances, `agentloom-agents-multimedia` implements 
 3. **Propose-Review Protocol**: Extracted knowledge never silently overwrites canonical memory. It enters `proposals/` and must be accepted via the AgentLoom Dashboard (`:8000`).
 4. **License & Redistribution Rules**: Adheres to fair-use and attribution constraints; stores distilled insights rather than redistributing raw copyrighted video streams.
 
-### 3.3 3-Track Organization in `agentloom-agents-multimedia`
+### 3.3 3-Track Organization & The Two-Role Graph Separation (Builder vs. Domain)
 
-AgentLoom strictly defines the three tracks of agent knowledge:
-- **Track 1**: Guidance Track (`.cursor/`, `.clinerules/`) — Rules and prompt behaviors governing how the agent executes.
-- **Track 2**: Domain Knowledge Track (`docs/`) — Long-form architecture, research summaries, and timestamped video digests.
-- **Track 3**: Skills Track (`agents/`) — Executable procedures, behaviors, and knowledge graphs that the agent directly runs.
+In accordance with AgentLoom v3 core architecture, knowledge is strictly split into two decoupled roles, each carrying its own 3-track components:
 
-| Track | Directory | Canonical Contents | Role |
+1. **Role 1 — `role-builder` (The MediaLoom Ingestion Engine / "How I Learn")**:
+   - Meta-knowledge driving the agent: how to probe media, audio stream formats, 16kHz downsampling heuristics, Whisper ASR budget thresholds, chapter alignment, and timestamp hyperlink anchoring.
+   - Low-frequency evolution: updated only when media handling tools, ASR APIs, or distillation prompts are upgraded.
+2. **Role 2 — `role-domain` (Harvested Multimedia Knowledge / "What I Learned")**:
+   - The substantive concepts, causal theories, historical analogies, and tutorial SOP skills extracted from ingested media.
+   - High-frequency evolution: grows dynamically every time a video or podcast is processed. Governed strictly via the **Propose → Review → Accept** pipeline.
+
+| Role | Sub-Track | Path | Canonical Contents |
 |---|---|---|---|
-| **Track 1: Guidance Track** | `.cursor/` or `.clinerules/` | Rules for audio chunking thresholds, ASR routing, and distillation prompts | How the builder agent works |
-| **Track 2: Knowledge Track** | `docs/sources/` & `docs/digests/` | Cleaned transcript records, timestamped chapter breakdowns, deep-dive technical syntheses | Domain documentation & reference |
-| **Track 3: Skills Track** | `agents/` (`agents/skills/`, `agents/behaviors/`, `agents/knowledge-graphs/`) | Executable skills (step-by-step procedures extracted from tutorials), behavior validators, and distilled knowledge graph JSONs | Executable intelligence & skills |
+| **Builder (Engine)** | Knowledge | `agents/knowledge-graphs/builder-knowledge-graph.json` | Engine architecture, dual-path ASR strategy, 24MB size boundaries, chapter scaffolding |
+| **Builder (Engine)** | Skills | `agents/skills/builder/` & `builder-skills-graph.json` | Executable engine skills: `probe-media-stream`, `audio-chunking-compression`, `whisper-asr-transcription`, `chapter-alignment-anchoring` |
+| **Builder (Engine)** | Behaviors | `agents/behaviors/builder/` & `builder-behaviors-graph.json` | Operational rules: `audio-budget-constraint`, `timestamp-anchoring-rule` |
+| **Domain (Harvested)** | Knowledge | `agents/knowledge-graphs/domain-knowledge-graph.json` | Harvested concepts, entity networks, and causal theories (e.g. AI Bubble, Netscape IPO analogy) |
+| **Domain (Harvested)** | Skills | `agents/skills/domain/` & `domain-skills-graph.json` | Harvested executable procedures from tutorials (`candidate/` for proposals, `accepted/` post-review) |
+| **Domain (Harvested)** | Behaviors | `agents/behaviors/domain/` & `domain-behaviors-graph.json` | Domain policies and constraints derived from digested content |
+| **Master Index** | Master | `agents/knowledge-graphs/master-graph.json` | Central registry connecting `role-builder` and `role-domain` roots for dashboard inspection |
 
 ---
 

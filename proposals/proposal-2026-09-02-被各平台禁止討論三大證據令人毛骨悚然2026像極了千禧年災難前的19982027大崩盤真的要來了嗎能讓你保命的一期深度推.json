@@ -1,0 +1,54 @@
+{
+  "proposal_id": "prop:2026-09-02-被各平台禁止討論三大證據令人毛骨悚然2026像極了千禧年災難前的19982027大崩盤真的要來了嗎能讓你保命的一期深度推",
+  "timestamp": "2026-09-02T16:00:29.655502",
+  "source": {
+    "type": "multimedia",
+    "url": "https://www.youtube.com/watch?v=R_PMTlFn0TQ",
+    "title": "被各平台禁止討論！三大證據令人毛骨悚然：2026像極了千禧年災難前的1998！2027大崩盤真的要來了嗎？能讓你保命的一期！深度推演AI泡沫破裂時間線 [She's 小烏]",
+    "channel": "脑洞乌托邦"
+  },
+  "target_track": "Track 3 (Skills Track)",
+  "candidate_kg_nodes": [
+    {
+      "id": "1",
+      "name": "AI Bubble",
+      "type": "Concept",
+      "description": "A speculative investment scenario in AI technologies, similar to the dot-com bubble.",
+      "relationships": [
+        {
+          "target": "2",
+          "relation": "compared_to"
+        },
+        {
+          "target": "3",
+          "relation": "influences"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Dot-com Bubble",
+      "type": "Historical Event",
+      "description": "A period of excessive speculation in internet-related companies in the late 1990s.",
+      "relationships": [
+        {
+          "target": "1",
+          "relation": "compared_to"
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "name": "Market Speculation",
+      "type": "Concept",
+      "description": "Investment in assets with the hope of price increases, often leading to bubbles.",
+      "relationships": [
+        {
+          "target": "1",
+          "relation": "influences"
+        }
+      ]
+    }
+  ],
+  "status": "pending_human_review"
+}

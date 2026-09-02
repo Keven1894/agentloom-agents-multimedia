@@ -1,0 +1,88 @@
+{
+  "graphType": "skills",
+  "role": "role-builder",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "MediaLoom Ingestion Engine Skills Graph — Executable audio, ASR, and distillation skills",
+  "nodes": [
+    {
+      "id": "skill:builder:root",
+      "type": "root",
+      "data": {
+        "title": "MediaLoom Engine Skills Root",
+        "description": "Root of executable skills for media ingestion and distillation.",
+        "category": "builder-meta"
+      },
+      "relationships": {
+        "parent": null,
+        "children": [
+          "skill:builder:probe-media-stream",
+          "skill:builder:audio-chunking-compression",
+          "skill:builder:whisper-asr-transcription",
+          "skill:builder:chapter-alignment-anchoring"
+        ]
+      }
+    },
+    {
+      "id": "skill:builder:probe-media-stream",
+      "type": "skill",
+      "data": {
+        "title": "Probe Media Stream & Metadata",
+        "description": "Probe media URL for duration, chapters, format 140 audio, and subtitle availability.",
+        "category": "audio-acquisition",
+        "path": "agents/skills/builder/probe-media-stream.md",
+        "tags": ["builder", "skill", "probe", "yt-dlp"]
+      },
+      "relationships": {
+        "parent": "skill:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "skill:builder:audio-chunking-compression",
+      "type": "skill",
+      "data": {
+        "title": "Audio Compression & Chunking",
+        "description": "Downsample audio to 16kHz mono MP3 and chunk if necessary to satisfy 24MB Whisper limit.",
+        "category": "audio-preprocessing",
+        "path": "agents/skills/builder/audio-chunking-compression.md",
+        "tags": ["builder", "skill", "ffmpeg", "compression", "chunking"]
+      },
+      "relationships": {
+        "parent": "skill:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "skill:builder:whisper-asr-transcription",
+      "type": "skill",
+      "data": {
+        "title": "Whisper ASR Transcription",
+        "description": "Dispatch audio to Whisper API, reconstruct global segment offsets, and cache results.",
+        "category": "acoustic-transcription",
+        "path": "agents/skills/builder/whisper-asr-transcription.md",
+        "tags": ["builder", "skill", "whisper", "asr"]
+      },
+      "relationships": {
+        "parent": "skill:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "skill:builder:chapter-alignment-anchoring",
+      "type": "skill",
+      "data": {
+        "title": "Chapter Alignment & Timestamp Anchoring",
+        "description": "Group segments into chapters and generate clickable timestamp hyperlinks for every section.",
+        "category": "structural-alignment",
+        "path": "agents/skills/builder/chapter-alignment-anchoring.md",
+        "tags": ["builder", "skill", "alignment", "chapters"]
+      },
+      "relationships": {
+        "parent": "skill:builder:root",
+        "children": []
+      }
+    }
+  ]
+}

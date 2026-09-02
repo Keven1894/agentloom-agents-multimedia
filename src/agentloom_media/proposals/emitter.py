@@ -74,10 +74,10 @@ def emit_distillation_artifacts(
         f.write("\n".join(md_lines))
     emitted["track2_digest"] = str(digest_path)
 
-    # 2. Track 3 Candidate Skills (agents/skills/candidate/)
+    # 2. Track 3 Candidate Skills (agents/skills/domain/candidate/)
     skills = distilled.get("candidate_skills", [])
     if skills:
-        skills_dir = repo_root / "agents" / "skills" / "candidate"
+        skills_dir = repo_root / "agents" / "skills" / "domain" / "candidate"
         skills_dir.mkdir(parents=True, exist_ok=True)
         for i, sk in enumerate(skills):
             sk_slug = slugify(sk.get("name", f"skill-{i+1}"))

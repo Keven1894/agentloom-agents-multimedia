@@ -1,9 +1,11 @@
-"""ASR transcription module using Whisper API with chunking support."""
+"""ASR transcription module using Whisper API with chunking and compression support."""
 
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import openai
+
+from agentloom_media.audio.chunker import prepare_audio_for_asr
 
 
 def transcribe_audio_file(
@@ -14,11 +16,13 @@ def transcribe_audio_file(
 ) -> Dict[str, Any]:
     """Transcribe an audio file using OpenAI Whisper API.
 
+    Automatically handles compression (<24MB) and chunking if audio is too large.
+
     Args:
-        audio_path: Path to the audio file.
+        audio_path: Path to the raw audio file.
         api_key: OpenAI API key.
         language: Optional language code (e.g. 'zh', 'en').
-        prompt: Optional prompt to guide style or vocabulary.
+        prompt: Optional prompt to guide vocabulary or style.
 
     Returns:
         Dict containing full text and segment-level timestamps.
@@ -29,21 +33,33 @@ def transcribe_audio_file(
 
     client = openai.OpenAI(api_key=key)
 
-    file_size_mb = audio_path.stat().st_size / (1024 * 1024)
-    if file_size_mb > 25.0:
-        # Note: If audio exceeds 25MB, an external chunker or downsampling step is recommended.
-        pass
+    # Prepare chunks (each < 24MB)
+    chunks = prepare_audio_for_asr(audio_path, max_size_mb=24.0)
 
-    with open(audio_path, "rb") as f:
-        response = client.audio.transcriptions.create(
-            model="whisper-1",
-            file=f,
-            response_format="verbose_json",
-            timestamp_granularities=["segment"],
-            language=language,
-            prompt=prompt,
-        )
+    combined_text = []
+    combined_segments = []
 
-    # Convert response to standard dictionary
-    data = response.model_dump() if hasattr(response, "model_dump") else dict(response)
-    return data
+    for chunk_file, offset_sec in chunks:
+        with open(chunk_file, "rb") as f:
+            response = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=f,
+                response_format="verbose_json",
+                timestamp_granularities=["segment"],
+                language=language,
+                prompt=prompt,
+            )
+
+        data = response.model_dump() if hasattr(response, "model_dump") else dict(response)
+        combined_text.append(data.get("text", ""))
+
+        for seg in data.get("segments", []):
+            seg_dict = dict(seg)
+            seg_dict["start"] = seg_dict.get("start", 0.0) + offset_sec
+            seg_dict["end"] = seg_dict.get("end", 0.0) + offset_sec
+            combined_segments.append(seg_dict)
+
+    return {
+        "text": " ".join(combined_text),
+        "segments": combined_segments,
+    }

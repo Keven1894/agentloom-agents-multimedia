@@ -1,0 +1,88 @@
+{
+  "graphType": "knowledge",
+  "role": "role-builder",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "MediaLoom Ingestion Engine Knowledge Graph — Core architecture, protocols, and audio/ASR heuristics",
+  "nodes": [
+    {
+      "id": "knowledge:builder:root",
+      "type": "root",
+      "data": {
+        "title": "MediaLoom Engine Architecture Root",
+        "description": "Root of the MediaLoom multimedia ingestion and distillation engine.",
+        "category": "builder-meta"
+      },
+      "relationships": {
+        "parent": null,
+        "children": [
+          "knowledge:builder:dual-path-asr-strategy",
+          "knowledge:builder:audio-compression-heuristic",
+          "knowledge:builder:native-chapter-scaffolding",
+          "knowledge:builder:multi-perspective-distillation"
+        ]
+      }
+    },
+    {
+      "id": "knowledge:builder:dual-path-asr-strategy",
+      "type": "architecture",
+      "data": {
+        "title": "Dual-Path Transcription Strategy (Fast Track vs. Heavy Path)",
+        "description": "Probe official/auto captions first (zero cost, 2-5 seconds). Fallback automatically to yt-dlp format 140 audio extraction and Whisper ASR when subtitles are disabled or unavailable.",
+        "category": "builder-architecture",
+        "path": "docs/architecture/multimedia-agent-architecture.md",
+        "tags": ["builder", "architecture", "asr", "dual-path"]
+      },
+      "relationships": {
+        "parent": "knowledge:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "knowledge:builder:audio-compression-heuristic",
+      "type": "heuristic",
+      "data": {
+        "title": "16kHz Mono Downsampling & 24MB ASR Boundary",
+        "description": "Cloud Whisper API enforces a 25MB upload limit. Format 140 audio over 24MB is downsampled to 16kHz mono 32kbps MP3 via imageio-ffmpeg, reducing file size by ~75% without compromising ASR word error rate.",
+        "category": "builder-heuristic",
+        "path": "agents/behaviors/builder/audio-budget-constraint.md",
+        "tags": ["builder", "audio", "ffmpeg", "whisper", "heuristics"]
+      },
+      "relationships": {
+        "parent": "knowledge:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "knowledge:builder:native-chapter-scaffolding",
+      "type": "heuristic",
+      "data": {
+        "title": "Native Chapter Scaffolding & Timestamp Anchors",
+        "description": "Extract creator-defined chapters to segment speech into natural topical units and generate hyperlinked timestamp URLs for all claims and skills.",
+        "category": "builder-heuristic",
+        "path": "agents/behaviors/builder/timestamp-anchoring-rule.md",
+        "tags": ["builder", "chapters", "provenance", "anchoring"]
+      },
+      "relationships": {
+        "parent": "knowledge:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "knowledge:builder:multi-perspective-distillation",
+      "type": "architecture",
+      "data": {
+        "title": "Multi-Perspective LLM Distillation Pipeline",
+        "description": "Simultaneously extract Track 2 Chronological Digests, Track 3 Conceptual Knowledge Graph nodes, and Track 3 Candidate Executable Skills.",
+        "category": "builder-architecture",
+        "path": "docs/architecture/multimedia-agent-architecture.md",
+        "tags": ["builder", "llm", "distillation", "3-track"]
+      },
+      "relationships": {
+        "parent": "knowledge:builder:root",
+        "children": []
+      }
+    }
+  ]
+}

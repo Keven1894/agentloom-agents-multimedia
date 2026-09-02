@@ -23,15 +23,21 @@ Historically, ingesting this knowledge required a human to watch the media, draf
 
 ---
 
-## 3-Track Architecture
+## 3-Track Architecture & The Two-Role Graph Separation
 
-This repository strictly organizes knowledge and agent instructions into AgentLoom's 3-Track convention:
+Following AgentLoom core architecture, knowledge is strictly divided into two roles:
+1. **Builder Role (`role-builder`) — "How I Learn"**: Meta-knowledge, skills, and behaviors driving the MediaLoom Ingestion Engine (probing, chunking, Whisper ASR, chapter alignment).
+2. **Domain Role (`role-domain`) — "What I Learned"**: Harvested substantive concepts, causal theories, and candidate skills distilled from media content, governed via propose-review.
 
-| Track | Directory | Role & Description |
-|---|---|---|
-| **Track 1: Guidance Track** | `.cursor/` & `.clinerules/` | Rules, thresholds, audio processing budgets, and distillation prompts for the builder agent. |
-| **Track 2: Knowledge Track** | `docs/` | System architecture, start guides, and timestamped video digests (`docs/digests/`). |
-| **Track 3: Skills Track** | `agents/` | Executable skills (`agents/skills/`), behavior validators (`agents/behaviors/`), and distilled conceptual knowledge graphs (`agents/knowledge-graphs/`). |
+| Role | Sub-Track | Path | Canonical Contents |
+|---|---|---|---|
+| **Builder (Engine)** | Knowledge | `agents/knowledge-graphs/builder-knowledge-graph.json` | Engine architecture, dual-path ASR strategy, 24MB boundaries |
+| **Builder (Engine)** | Skills | `agents/skills/builder/` & `builder-skills-graph.json` | Engine skills: `probe-media-stream`, `audio-chunking-compression`, `whisper-asr-transcription`, `chapter-alignment-anchoring` |
+| **Builder (Engine)** | Behaviors | `agents/behaviors/builder/` & `builder-behaviors-graph.json` | Operational rules: `audio-budget-constraint`, `timestamp-anchoring-rule` |
+| **Domain (Harvested)** | Knowledge | `agents/knowledge-graphs/domain-knowledge-graph.json` | Harvested concepts and causal networks (e.g. AI bubble, Dot-com analogies) |
+| **Domain (Harvested)** | Skills | `agents/skills/domain/` & `domain-skills-graph.json` | Harvested SOP skills (`candidate/` for proposals, `accepted/` post-review) |
+| **Domain (Harvested)** | Behaviors | `agents/behaviors/domain/` & `domain-behaviors-graph.json` | Domain policies and constraints derived from digested content |
+| **Master Index** | Master | `agents/knowledge-graphs/master-graph.json` | Central registry connecting builder and domain roots for dashboard inspection |
 
 ---
 
@@ -50,11 +56,22 @@ agentloom-agents-multimedia/
 │   │   └── START_HERE.md
 │   └── digests/                          # Timestamped digests & research memos
 ├── agents/                                # Track 3: Skills Track (Executable Knowledge)
-│   ├── skills/                           # Executable skills (tutorials -> SOPs)
-│   │   └── candidate/
-│   ├── behaviors/                        # Agent behavior rules & constraints
-│   └── knowledge-graphs/                 # Conceptual knowledge graphs & entity networks
-│       └── domain-concepts-graph.json
+│   ├── skills/
+│   │   ├── builder/                      # Engine skills (probe, chunk, transcribe, align)
+│   │   └── domain/                       # Harvested skills from tutorials
+│   │       ├── candidate/                # Ingested candidate SOPs pending review
+│   │       └── accepted/                 # Reviewed & approved SOP skills
+│   ├── behaviors/
+│   │   ├── builder/                      # Engine operational rules & constraints
+│   │   └── domain/                       # Domain behavioral rules
+│   └── knowledge-graphs/
+│       ├── master-graph.json             # Master graph registry
+│       ├── builder-knowledge-graph.json  # Engine architecture graph
+│       ├── builder-skills-graph.json     # Engine skills graph
+│       ├── builder-behaviors-graph.json  # Engine behaviors graph
+│       ├── domain-knowledge-graph.json   # Harvested concepts & entities graph
+│       ├── domain-skills-graph.json      # Harvested skills graph
+│       └── domain-behaviors-graph.json   # Domain behaviors graph
 ├── src/agentloom_media/                  # Python Framework & CLI
 │   ├── cli.py                            # `agentloom-media ingest <url>` entrypoint
 │   ├── acquisition/                      # Probing, fast subtitles, stream extraction

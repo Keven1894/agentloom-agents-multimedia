@@ -16,7 +16,11 @@ from agentloom_media.distillation.distiller import distill_aligned_chapters
 from agentloom_media.proposals.emitter import emit_distillation_artifacts
 
 console = Console()
-dotenv.load_dotenv()
+# Look for .env in current working dir or repo root
+_env_path = Path.cwd() / ".env"
+if not _env_path.exists():
+    _env_path = Path(__file__).resolve().parents[2] / ".env"
+dotenv.load_dotenv(_env_path)
 
 
 @click.group()
@@ -28,7 +32,7 @@ def main():
 @main.command()
 @click.argument("url")
 @click.option("--output-dir", default=None, help="Repository root directory to save artifacts.")
-@click.option("--model", default="gpt-4o-mini", help="LLM model for distillation.")
+@click.option("--model", default="gpt-4o", help="LLM model for distillation.")
 def ingest(url: str, output_dir: str, model: str):
     """Ingest a video/audio URL, transcribe, align with chapters, and distill into AgentLoom 3-track artifacts."""
     console.print(Panel(f"[bold cyan]MediaLoom Ingestion Pipeline[/bold cyan]\nTarget: {url}", expand=False))
@@ -50,7 +54,16 @@ def ingest(url: str, output_dir: str, model: str):
 
     # Stage 2: Transcribe
     segments = None
-    if meta.get("id"):
+    cache_dir = repo_root / ".cache" / "transcripts"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    transcript_cache_file = cache_dir / f"{meta.get('id', 'media')}_segments.json"
+
+    if transcript_cache_file.exists():
+        import json
+        console.print(f"[green]✓ Found cached transcript in {transcript_cache_file}, skipping ASR![/green]")
+        with open(transcript_cache_file, "r", encoding="utf-8") as f:
+            segments = json.load(f)
+    elif meta.get("id"):
         console.print("[yellow]Stage 2A: Checking Fast Track (official/auto captions)...[/yellow]")
         raw_captions = fetch_fast_transcript(meta["id"])
         if raw_captions:
@@ -64,8 +77,8 @@ def ingest(url: str, output_dir: str, model: str):
 
     if not segments:
         console.print("[yellow]Stage 2B: Heavy Path (Extracting audio format 140)...[/yellow]")
-        cache_dir = repo_root / ".cache" / "audio"
-        audio_file = extract_audio_stream(url, str(cache_dir))
+        audio_cache_dir = repo_root / ".cache" / "audio"
+        audio_file = extract_audio_stream(url, str(audio_cache_dir))
         console.print(f"  [green]✓[/green] Audio saved to: {audio_file} ({audio_file.stat().st_size / (1024*1024):.1f} MB)")
 
         console.print("[yellow]Stage 2C: Running ASR Engine (Whisper API)...[/yellow]")
@@ -76,6 +89,10 @@ def ingest(url: str, output_dir: str, model: str):
             for s in raw_segments
         ]
         console.print(f"  [green]✓[/green] ASR transcription completed: {len(segments)} segments.")
+
+        import json
+        with open(transcript_cache_file, "w", encoding="utf-8") as f:
+            json.dump(segments, f, ensure_ascii=False, indent=2)
 
     # Stage 3: Align with chapters
     console.print("[yellow]Stage 3: Aligning transcript segments with chapter timestamps...[/yellow]")

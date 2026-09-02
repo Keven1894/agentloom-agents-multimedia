@@ -27,6 +27,12 @@ def extract_audio_stream(url: str, output_dir: str) -> Path:
         "noplaylist": True,
     }
 
+    try:
+        import imageio_ffmpeg
+        ydl_opts["ffmpeg_location"] = imageio_ffmpeg.get_ffmpeg_exe()
+    except ImportError:
+        pass
+
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=True)
         video_id = info.get("id")

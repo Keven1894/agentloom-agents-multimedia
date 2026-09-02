@@ -1,0 +1,23 @@
+{
+  "graphType": "behaviors",
+  "role": "role-domain",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "Harvested Domain Behaviors Graph — Domain-specific policies and constraints",
+  "nodes": [
+    {
+      "id": "behavior:domain:root",
+      "type": "root",
+      "data": {
+        "title": "Domain Behaviors Root",
+        "description": "Root of domain behavioral policies.",
+        "category": "domain-meta"
+      },
+      "relationships": {
+        "parent": null,
+        "children": []
+      }
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "graphType": "skills",
+  "role": "role-domain",
+  "project": "agentloom-agents-multimedia",
+  "version": "1.0.0",
+  "generatedAt": "2026-09-02",
+  "description": "Harvested Domain Skills Graph — Executable SOPs, developer workflows, and procedures distilled from video tutorials",
+  "nodes": [
+    {
+      "id": "skill:domain:root",
+      "type": "root",
+      "data": {
+        "title": "Harvested Domain Skills Root",
+        "description": "Root of all procedural skills and workflows distilled from multimedia tutorials.",
+        "category": "domain-meta"
+      },
+      "relationships": {
+        "parent": null,
+        "children": [
+          "skill:domain:candidate:adapt-to-technological-change"
+        ]
+      }
+    },
+    {
+      "id": "skill:domain:candidate:adapt-to-technological-change",
+      "type": "candidate-skill",
+      "data": {
+        "title": "Adapt to Technological Change",
+        "description": "Continuous learning and technology adoption SOP distilled from She's 小乌 AI bubble analysis.",
+        "category": "adaptability",
+        "path": "agents/skills/domain/candidate/adapt-to-technological-change.md",
+        "source_url": "https://www.youtube.com/watch?v=R_PMTlFn0TQ&t=2048s",
+        "status": "candidate",
+        "tags": ["domain", "skill", "candidate", "learning"]
+      },
+      "relationships": {
+        "parent": "skill:domain:root",
+        "children": []
+      }
+    }
+  ]
+}
