@@ -24,6 +24,7 @@ Inspect a target multimedia URL (YouTube, Vimeo, podcast, or local media file) t
    - Inspect audio formats to locate format 140 (native AAC/m4a container).
 3. If captions are present, route to Fast Track (`fetch_fast_transcript`).
 4. If captions are disabled or unavailable, route to Heavy Path (`extract_audio_stream`).
+5. If Heavy Path extraction fails, route to Slow Track (`browser_capture` at playbackRate 1.5, then rescale ASR timestamps).
 
 ## Verification
 

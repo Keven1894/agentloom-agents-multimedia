@@ -20,7 +20,8 @@
           "skill:builder:probe-media-stream",
           "skill:builder:audio-chunking-compression",
           "skill:builder:whisper-asr-transcription",
-          "skill:builder:chapter-alignment-anchoring"
+          "skill:builder:chapter-alignment-anchoring",
+          "skill:builder:browser-audio-capture"
         ]
       }
     },
@@ -78,6 +79,21 @@
         "category": "structural-alignment",
         "path": "agents/skills/builder/chapter-alignment-anchoring.md",
         "tags": ["builder", "skill", "alignment", "chapters"]
+      },
+      "relationships": {
+        "parent": "skill:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "skill:builder:browser-audio-capture",
+      "type": "skill",
+      "data": {
+        "title": "Slow Track Browser Playback Capture",
+        "description": "Play an operator-accessible watch page, record HTMLMediaElement.captureStream() audio at 1.5x-2.0x, then rescale ASR timestamps onto the original timeline.",
+        "category": "audio-acquisition",
+        "path": "agents/skills/builder/browser-audio-capture.md",
+        "tags": ["builder", "skill", "slow-track", "playwright", "captureStream"]
       },
       "relationships": {
         "parent": "skill:builder:root",

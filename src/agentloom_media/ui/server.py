@@ -18,11 +18,19 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from agentloom_media.ui.jobs import global_job_manager, IngestJob
+from dotenv import load_dotenv
+
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
+env_file = WORKSPACE_ROOT / ".env"
+if env_file.exists():
+    load_dotenv(dotenv_path=env_file)
+else:
+    load_dotenv()
 DOCS_DIR = WORKSPACE_ROOT / "docs"
 DIGESTS_DIR = DOCS_DIR / "digests"
 AGENTS_DIR = WORKSPACE_ROOT / "agents"
@@ -92,6 +100,12 @@ def get_agent_profile() -> Dict[str, Any]:
                 "name": "Heavy Path Audio Stream Extraction",
                 "status": "active",
                 "description": "Extracts format 140 m4a pure audio stream without downloading heavy video payloads.",
+            },
+            {
+                "id": "slow-track-browser-capture",
+                "name": "Slow Track Browser Playback Capture",
+                "status": "planned",
+                "description": "Last-resort path: play the watch page in Chromium, record element audio at 1.5x-2.0x via captureStream(), then rescale ASR timestamps to the original timeline.",
             },
             {
                 "id": "budget-chunker",
@@ -340,6 +354,97 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
 
     else:
         raise HTTPException(status_code=400, detail=f"Unsupported review action '{action}'")
+
+
+# ==========================================
+# 5. One-Click Ingestion & SSE Live Pipeline
+# ==========================================
+class SubmitIngestPayload(BaseModel):
+    url: str
+    model: Optional[str] = "gpt-4o"
+
+
+@app.post("/api/ingest/submit")
+async def submit_ingest_job(payload: SubmitIngestPayload) -> Dict[str, Any]:
+    url = payload.url.strip()
+    if not url:
+        raise HTTPException(status_code=400, detail="URL cannot be empty")
+
+    global_job_manager.workspace_root = WORKSPACE_ROOT
+    job = global_job_manager.create_job(
+        url=url,
+        model=payload.model or "gpt-4o",
+        output_dir=WORKSPACE_ROOT
+    )
+    import asyncio
+    asyncio.create_task(global_job_manager.run_job(job))
+    return {
+        "ok": True,
+        "job_id": job.job_id,
+        "job": job.snapshot()
+    }
+
+
+@app.get("/api/ingest/jobs")
+def list_ingest_jobs() -> Dict[str, Any]:
+    return {"jobs": global_job_manager.list_jobs()}
+
+
+@app.get("/api/ingest/jobs/{job_id}")
+def get_ingest_job(job_id: str) -> Dict[str, Any]:
+    job = global_job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    data = job.snapshot()
+    data["logs"] = job.logs
+    return data
+
+
+@app.get("/api/ingest/stream/{job_id}")
+async def stream_ingest_job(job_id: str):
+    job = global_job_manager.get_job(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    import asyncio
+
+    async def event_generator():
+        # First send the initial snapshot and existing logs
+        init_payload = {
+            "type": "init",
+            "snapshot": job.snapshot(),
+            "logs": job.logs
+        }
+        yield f"data: {json.dumps(init_payload)}\n\n"
+
+        if job.status in ("completed", "failed"):
+            return
+
+        queue = job.add_listener()
+        try:
+            while True:
+                try:
+                    event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                    yield f"data: {json.dumps(event)}\n\n"
+                    if event.get("type") in ("stage_update", "error"):
+                        if event.get("status") in ("completed", "failed"):
+                            break
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+                    if job.status in ("completed", "failed"):
+                        break
+        finally:
+            job.remove_listener(queue)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 # Mount static web assets

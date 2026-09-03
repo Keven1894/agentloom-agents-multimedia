@@ -55,6 +55,9 @@
 
       <!-- Navigation Tabs -->
       <nav class="flex space-x-1">
+        <button onclick="switchTab('ingest')" id="tab-btn-ingest" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-500/20 transition flex items-center gap-2">
+          <i class="fa-solid fa-bolt text-xs text-amber-300"></i> One-Click Ingest
+        </button>
         <button onclick="switchTab('profile')" id="tab-btn-profile" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
           <i class="fa-solid fa-id-card text-xs"></i> Agent Profile
         </button>
@@ -64,7 +67,7 @@
         <button onclick="switchTab('kg')" id="tab-btn-kg" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
           <i class="fa-solid fa-network-wired text-xs"></i> 3-Track KG
         </button>
-        <button onclick="switchTab('review')" id="tab-btn-review" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg bg-indigo-600 text-white shadow-md shadow-indigo-500/20 transition flex items-center gap-2">
+        <button onclick="switchTab('review')" id="tab-btn-review" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
           <i class="fa-solid fa-user-check text-xs"></i>
           <span>Human Review Portal</span>
           <span id="pending-badge" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-400 text-slate-950">0</span>
@@ -75,6 +78,169 @@
 
   <!-- Main Content Area -->
   <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+
+    <!-- ========================================== -->
+    <!-- TAB 0: ONE-CLICK INGESTION & LIVE PIPELINE -->
+    <!-- ========================================== -->
+    <div id="tab-ingest" class="tab-pane space-y-6">
+      <!-- Ingestion Hero Card -->
+      <div class="bg-gradient-to-r from-slate-900 via-indigo-950/60 to-slate-900 border border-slate-800 rounded-2xl p-6 relative overflow-hidden shadow-xl">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+          <div>
+            <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-2">
+              <i class="fa-solid fa-bolt"></i> Autonomous Ingestion Station
+            </div>
+            <h1 class="text-2xl font-bold text-white">One-Click Ingestion & Live Learning</h1>
+            <p class="text-slate-300 text-sm mt-1 max-w-2xl">
+              Feed any video or authorized course URL into MediaLoom. The pipeline executes automated probing, captions/ASR extraction, temporal alignment, and LLM distillation into AgentLoom 3-Track memory.
+            </p>
+          </div>
+          <!-- Personal Study Bridge Badge -->
+          <div class="bg-indigo-950/70 border border-indigo-800/60 rounded-xl p-3.5 max-w-xs text-xs">
+            <div class="flex items-center gap-2 font-semibold text-indigo-300 mb-1">
+              <i class="fa-solid fa-graduation-cap"></i> Authorized Study Bridge
+            </div>
+            <p class="text-slate-400 text-[11px] leading-relaxed">
+              Legitimately purchased a course or tutorial? Slow Track captures decoded browser playback, bridging your purchased lessons into your personal AI knowledge base.
+            </p>
+          </div>
+        </div>
+
+        <!-- URL Input & Model Form -->
+        <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-4">
+          <div class="flex flex-col md:flex-row items-stretch gap-3">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <i class="fa-solid fa-link"></i>
+              </span>
+              <input type="text" id="ingest-url-input" placeholder="Paste YouTube, Bilibili, Podcast, or Lesson URL (e.g. https://www.youtube.com/watch?v=...)" class="w-full pl-10 pr-4 py-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition">
+            </div>
+
+            <!-- Model Selection -->
+            <div class="w-full md:w-56">
+              <select id="ingest-model-select" class="w-full py-3 px-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
+                <option value="gpt-4o">GPT-4o (High Precision)</option>
+                <option value="gpt-4o-mini">GPT-4o-mini (Cost-Optimized)</option>
+              </select>
+            </div>
+
+            <!-- Run Button -->
+            <button id="btn-run-ingest" onclick="triggerIngest()" class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 transition disabled:opacity-50">
+              <i class="fa-solid fa-play text-xs"></i>
+              <span>Run Pipeline</span>
+            </button>
+          </div>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-slate-400 gap-2 pt-1">
+            <div class="flex items-center gap-2">
+              <span class="text-slate-500">Quick Test:</span>
+              <button onclick="fillSampleUrl('https://www.youtube.com/watch?v=R_PMTlFn0TQ')" class="text-indigo-400 hover:underline">
+                Load Sample Video (R_PMTlFn0TQ)
+              </button>
+            </div>
+            <div class="flex items-center gap-3 text-[11px] text-slate-500">
+              <span><i class="fa-solid fa-bolt text-amber-400"></i> Fast Track: Captions</span>
+              <span><i class="fa-solid fa-shield-halved text-blue-400"></i> Heavy Path: Whisper ASR</span>
+              <span><i class="fa-solid fa-browser text-purple-400"></i> Slow Track: Study Bridge</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live Job Execution Panel (shown when job is active/selected) -->
+      <div id="live-job-panel" class="hidden space-y-6">
+        <!-- Live Status Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span id="job-status-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5">
+                  <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> RUNNING
+                </span>
+                <span id="job-id-display" class="text-xs font-mono text-slate-500">job_12345</span>
+              </div>
+              <h3 id="job-title-display" class="text-lg font-bold text-white mt-1">Ingestion in progress...</h3>
+              <p id="job-message-display" class="text-xs text-indigo-400 mt-0.5">Initializing pipeline worker...</p>
+            </div>
+
+            <!-- Jump to Review Button (shown upon completion) -->
+            <div id="job-completed-action" class="hidden">
+              <button onclick="switchTab('review')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition animate-bounce">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Open in Human Review Portal</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="space-y-2">
+            <div class="flex justify-between text-xs text-slate-400">
+              <span id="job-current-stage-label" class="font-medium text-slate-300">Stage 1: Probing</span>
+              <span id="job-percent-label" class="font-mono text-indigo-400 font-bold">15%</span>
+            </div>
+            <div class="w-full bg-slate-950 rounded-full h-3 p-0.5 border border-slate-800 overflow-hidden">
+              <div id="job-progress-bar" class="bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-400 h-full rounded-full transition-all duration-500 w-0"></div>
+            </div>
+          </div>
+
+          <!-- 5-Stage Stepper -->
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mt-6 pt-4 border-t border-slate-800 text-center text-xs">
+            <div id="step-probing" class="step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400">
+              <i class="fa-solid fa-magnifying-glass mb-1 text-sm block"></i>
+              <div class="font-semibold text-white">1. Probe</div>
+              <div class="text-[10px] text-slate-500">Metadata & Specs</div>
+            </div>
+            <div id="step-transcribing" class="step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400">
+              <i class="fa-solid fa-waveform-lines mb-1 text-sm block"></i>
+              <div class="font-semibold text-white">2. Transcribe</div>
+              <div class="text-[10px] text-slate-500">Captions / ASR</div>
+            </div>
+            <div id="step-aligning" class="step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400">
+              <i class="fa-solid fa-link mb-1 text-sm block"></i>
+              <div class="font-semibold text-white">3. Align</div>
+              <div class="text-[10px] text-slate-500">Chapter Anchoring</div>
+            </div>
+            <div id="step-distilling" class="step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400">
+              <i class="fa-solid fa-brain mb-1 text-sm block"></i>
+              <div class="font-semibold text-white">4. Distill</div>
+              <div class="text-[10px] text-slate-500">LLM Synthesis</div>
+            </div>
+            <div id="step-emitting" class="step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-400">
+              <i class="fa-solid fa-file-export mb-1 text-sm block"></i>
+              <div class="font-semibold text-white">5. Emit</div>
+              <div class="text-[10px] text-slate-500">3-Track & Proposal</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Terminal Stream Log Console -->
+        <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+          <div class="bg-slate-900/90 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center gap-2 font-mono">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span>
+              <span class="ml-2 text-slate-300 font-semibold">Live Pipeline Stream (SSE)</span>
+            </div>
+            <span id="terminal-event-count" class="font-mono text-[11px] text-slate-500">0 events</span>
+          </div>
+          <div id="terminal-logs" class="p-4 font-mono text-xs text-emerald-400 bg-slate-950/95 h-64 overflow-y-auto space-y-1 custom-scroll">
+            <div class="text-slate-600">// Pipeline terminal output will stream here in real-time...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Jobs Table -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+        <h3 class="text-base font-bold text-white mb-3 flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-indigo-400"></i> Ingestion History & Recent Jobs
+        </h3>
+        <div id="jobs-table-container" class="overflow-x-auto">
+          <div class="text-xs text-slate-500 py-4 text-center">Loading jobs history...</div>
+        </div>
+      </div>
+    </div>
 
     <!-- ========================================== -->
     <!-- TAB 1: AGENT PROFILE & CAPABILITIES        -->
@@ -285,6 +451,8 @@
     let currentRole = 'domain';
     let currentTrack = 'knowledge';
     let loadedProposals = [];
+    let activeEventSource = null;
+    let currentJobId = null;
 
     // Switch Tabs
     function switchTab(tabId) {
@@ -303,6 +471,7 @@
         btn.classList.add('bg-indigo-600', 'text-white', 'shadow-md');
       }
 
+      if (tabId === 'ingest') loadJobsHistory();
       if (tabId === 'profile') loadProfile();
       if (tabId === 'data') loadDigests();
       if (tabId === 'kg') loadKg();
@@ -712,9 +881,254 @@
       }
     }
 
+    // ==========================================
+    // 5. Ingestion Station & Live SSE Stream
+    // ==========================================
+    function fillSampleUrl(url) {
+      const input = document.getElementById('ingest-url-input');
+      input.value = url;
+      input.focus();
+    }
+
+    async function triggerIngest() {
+      const urlInput = document.getElementById('ingest-url-input');
+      const modelSelect = document.getElementById('ingest-model-select');
+      const runBtn = document.getElementById('btn-run-ingest');
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        showToast('Please enter a valid video or course URL', true);
+        urlInput.focus();
+        return;
+      }
+
+      runBtn.disabled = true;
+      runBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Queuing...</span>';
+
+      try {
+        const res = await fetch('/api/ingest/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: url, model: modelSelect.value })
+        });
+        const data = await res.json();
+        if (data.ok) {
+          showToast(`Ingestion queued: ${data.job_id}`);
+          listenToJob(data.job_id);
+          loadJobsHistory();
+        } else {
+          showToast(data.detail || 'Failed to submit ingestion job', true);
+        }
+      } catch (err) {
+        console.error(err);
+        showToast('Network error while submitting ingestion job', true);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = '<i class="fa-solid fa-play text-xs"></i> <span>Run Pipeline</span>';
+      }
+    }
+
+    function listenToJob(jobId) {
+      currentJobId = jobId;
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+
+      const panel = document.getElementById('live-job-panel');
+      panel.classList.remove('hidden');
+
+      const logsBox = document.getElementById('terminal-logs');
+      logsBox.innerHTML = '';
+      document.getElementById('job-completed-action').classList.add('hidden');
+      document.getElementById('job-id-display').textContent = jobId;
+      document.getElementById('job-status-badge').innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> RUNNING';
+      document.getElementById('job-status-badge').className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1.5";
+      document.getElementById('job-message-display').textContent = 'Connecting to real-time event stream...';
+
+      activeEventSource = new EventSource(`/api/ingest/stream/${jobId}`);
+
+      activeEventSource.onmessage = function(e) {
+        try {
+          const event = JSON.parse(e.data);
+          handlePipelineEvent(event);
+        } catch (err) {
+          console.error('Error parsing SSE event:', err);
+        }
+      };
+
+      activeEventSource.onerror = function() {
+        console.warn('SSE connection ended or closed');
+        if (activeEventSource) {
+          activeEventSource.close();
+          activeEventSource = null;
+        }
+      };
+    }
+
+    function handlePipelineEvent(event) {
+      const logsBox = document.getElementById('terminal-logs');
+      const counter = document.getElementById('terminal-event-count');
+
+      if (event.type === 'init') {
+        const snap = event.snapshot;
+        updateJobProgressUI(snap.stage, snap.progress, snap.message, snap.status, snap.meta);
+        if (event.logs && event.logs.length > 0) {
+          logsBox.innerHTML = event.logs.map(l => `<div class="leading-relaxed"><span class="text-slate-600">[${l.time}]</span> ${escapeHtml(l.text)}</div>`).join('');
+          counter.textContent = `${event.logs.length} events`;
+          logsBox.scrollTop = logsBox.scrollHeight;
+        }
+        if (snap.status === 'completed') {
+          markJobCompleted();
+        } else if (snap.status === 'failed') {
+          markJobFailed(snap.error);
+        }
+      } else if (event.type === 'stage_update') {
+        updateJobProgressUI(event.stage, event.progress, event.message, event.status);
+        if (event.status === 'completed') {
+          markJobCompleted();
+        }
+      } else if (event.type === 'log') {
+        const entry = event.entry;
+        const line = document.createElement('div');
+        line.className = 'leading-relaxed';
+        line.innerHTML = `<span class="text-slate-600">[${entry.time}]</span> ${escapeHtml(entry.text)}`;
+        logsBox.appendChild(line);
+        logsBox.scrollTop = logsBox.scrollHeight;
+        const count = logsBox.children.length;
+        counter.textContent = `${count} events`;
+      } else if (event.type === 'error') {
+        markJobFailed(event.error);
+      }
+    }
+
+    function updateJobProgressUI(stage, progress, message, status, meta = null) {
+      const pBar = document.getElementById('job-progress-bar');
+      const pLabel = document.getElementById('job-percent-label');
+      const sLabel = document.getElementById('job-current-stage-label');
+      const mLabel = document.getElementById('job-message-display');
+
+      pBar.style.width = `${progress}%`;
+      pLabel.textContent = `${progress}%`;
+      sLabel.textContent = `Stage: ${stage.toUpperCase()}`;
+      mLabel.textContent = message;
+
+      if (meta && meta.title) {
+        document.getElementById('job-title-display').textContent = meta.title;
+      }
+
+      // Update stepper stages
+      const stages = ['probing', 'transcribing', 'aligning', 'distilling', 'emitting'];
+      const currentIdx = stages.indexOf(stage);
+
+      stages.forEach((st, idx) => {
+        const card = document.getElementById(`step-${st}`);
+        if (!card) return;
+        if (currentIdx > idx || status === 'completed') {
+          card.className = "step-card p-2.5 rounded-xl border border-emerald-500/40 bg-emerald-950/20 text-emerald-300";
+        } else if (currentIdx === idx) {
+          card.className = "step-card p-2.5 rounded-xl border border-indigo-500 bg-indigo-950/40 text-indigo-200 ring-2 ring-indigo-500/30";
+        } else {
+          card.className = "step-card p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 text-slate-500";
+        }
+      });
+    }
+
+    function markJobCompleted() {
+      const badge = document.getElementById('job-status-badge');
+      badge.innerHTML = '<i class="fa-solid fa-circle-check text-xs"></i> COMPLETED';
+      badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5";
+      document.getElementById('job-completed-action').classList.remove('hidden');
+      document.getElementById('job-progress-bar').style.width = "100%";
+      document.getElementById('job-percent-label').textContent = "100%";
+      document.getElementById('job-current-stage-label').textContent = "Ingestion Complete";
+      showToast("Ingestion completed! Proposal emitted to Human Review Portal.");
+      loadProposals();
+      loadJobsHistory();
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+    }
+
+    function markJobFailed(err) {
+      const badge = document.getElementById('job-status-badge');
+      badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-xs"></i> FAILED';
+      badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5";
+      document.getElementById('job-message-display').textContent = `Error: ${err}`;
+      showToast(`Job failed: ${err}`, true);
+      loadJobsHistory();
+      if (activeEventSource) {
+        activeEventSource.close();
+        activeEventSource = null;
+      }
+    }
+
+    async function loadJobsHistory() {
+      try {
+        const res = await fetch('/api/ingest/jobs');
+        const data = await res.json();
+        const container = document.getElementById('jobs-table-container');
+        const jobs = data.jobs || [];
+
+        if (jobs.length === 0) {
+          container.innerHTML = '<div class="text-xs text-slate-500 py-6 text-center">No ingestion jobs run yet in this session. Submit a URL above to start!</div>';
+          return;
+        }
+
+        container.innerHTML = `
+          <table class="w-full text-left text-xs text-slate-300">
+            <thead class="text-[11px] text-slate-400 uppercase bg-slate-950/60 border-b border-slate-800">
+              <tr>
+                <th class="py-3 px-3">Job ID</th>
+                <th class="py-3 px-3">Target Title / URL</th>
+                <th class="py-3 px-3">Model</th>
+                <th class="py-3 px-3">Status</th>
+                <th class="py-3 px-3">Time</th>
+                <th class="py-3 px-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-800">
+              ${jobs.map(j => `
+                <tr class="hover:bg-slate-800/40 transition">
+                  <td class="py-3 px-3 font-mono text-[11px] text-slate-400">${j.job_id}</td>
+                  <td class="py-3 px-3">
+                    <div class="font-semibold text-white truncate max-w-xs">${j.meta && j.meta.title ? j.meta.title : j.url}</div>
+                    <div class="text-[10px] text-slate-500 truncate max-w-xs">${j.url}</div>
+                  </td>
+                  <td class="py-3 px-3 font-mono text-[11px] text-indigo-400">${j.model}</td>
+                  <td class="py-3 px-3">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${
+                      j.status === 'completed' ? 'bg-emerald-500/20 text-emerald-300' :
+                      j.status === 'running' ? 'bg-amber-500/20 text-amber-300 animate-pulse' :
+                      j.status === 'failed' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-400'
+                    }">${j.status.toUpperCase()}</span>
+                  </td>
+                  <td class="py-3 px-3 text-[11px] text-slate-400">${j.created_at}</td>
+                  <td class="py-3 px-3 text-right">
+                    <button onclick="listenToJob('${j.job_id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded text-[11px] font-medium transition">
+                      Inspect & Stream
+                    </button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        `;
+      } catch (err) {
+        console.error('Failed to load jobs history:', err);
+      }
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
     // Initialize default tab
     document.addEventListener('DOMContentLoaded', () => {
-      switchTab('review');
+      switchTab('ingest');
+      loadProposals(); // update pending badge immediately
     });
   </script>
 </body>

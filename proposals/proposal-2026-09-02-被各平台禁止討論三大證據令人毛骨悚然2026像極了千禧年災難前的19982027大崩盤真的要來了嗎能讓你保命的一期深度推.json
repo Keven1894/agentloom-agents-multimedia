@@ -1,6 +1,6 @@
 {
   "proposal_id": "prop:2026-09-02-被各平台禁止討論三大證據令人毛骨悚然2026像極了千禧年災難前的19982027大崩盤真的要來了嗎能讓你保命的一期深度推",
-  "timestamp": "2026-09-02T16:00:29.655502",
+  "timestamp": "2026-09-02T19:59:53.837516",
   "source": {
     "type": "multimedia",
     "url": "https://www.youtube.com/watch?v=R_PMTlFn0TQ",
@@ -13,7 +13,7 @@
       "id": "1",
       "name": "AI Bubble",
       "type": "Concept",
-      "description": "A speculative investment scenario in AI technologies, similar to the dot-com bubble.",
+      "description": "A speculative increase in AI-related investments that may lead to a market correction.",
       "relationships": [
         {
           "target": "2",
@@ -27,25 +27,25 @@
     },
     {
       "id": "2",
-      "name": "Dot-com Bubble",
+      "name": "Internet Bubble",
       "type": "Historical Event",
       "description": "A period of excessive speculation in internet-related companies in the late 1990s.",
       "relationships": [
         {
           "target": "1",
-          "relation": "compared_to"
+          "relation": "comparison_with"
         }
       ]
     },
     {
       "id": "3",
-      "name": "Market Speculation",
-      "type": "Concept",
-      "description": "Investment in assets with the hope of price increases, often leading to bubbles.",
+      "name": "Market Correction",
+      "type": "Economic Event",
+      "description": "A decline in market prices following a period of excessive speculation.",
       "relationships": [
         {
           "target": "1",
-          "relation": "influences"
+          "relation": "potential_outcome_of"
         }
       ]
     }

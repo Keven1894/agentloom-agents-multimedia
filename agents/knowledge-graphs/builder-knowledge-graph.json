@@ -18,6 +18,7 @@
         "parent": null,
         "children": [
           "knowledge:builder:dual-path-asr-strategy",
+          "knowledge:builder:slow-track-browser-capture",
           "knowledge:builder:audio-compression-heuristic",
           "knowledge:builder:native-chapter-scaffolding",
           "knowledge:builder:multi-perspective-distillation"
@@ -28,11 +29,26 @@
       "id": "knowledge:builder:dual-path-asr-strategy",
       "type": "architecture",
       "data": {
-        "title": "Dual-Path Transcription Strategy (Fast Track vs. Heavy Path)",
-        "description": "Probe official/auto captions first (zero cost, 2-5 seconds). Fallback automatically to yt-dlp format 140 audio extraction and Whisper ASR when subtitles are disabled or unavailable.",
+        "title": "Three-Path Transcription Strategy (Fast, Heavy, Slow)",
+        "description": "Probe official/auto captions first (zero cost, 2-5 seconds). Fallback to yt-dlp format 140 + Whisper when subtitles are unavailable. Last resort: Slow Track browser playback capture with pitch-preserving playbackRate 1.5x-2.0x and timestamp rescale t_original = t_asr * rate.",
         "category": "builder-architecture",
         "path": "docs/architecture/multimedia-agent-architecture.md",
-        "tags": ["builder", "architecture", "asr", "dual-path"]
+        "tags": ["builder", "architecture", "asr", "three-path"]
+      },
+      "relationships": {
+        "parent": "knowledge:builder:root",
+        "children": []
+      }
+    },
+    {
+      "id": "knowledge:builder:slow-track-browser-capture",
+      "type": "architecture",
+      "data": {
+        "title": "Slow Track Browser Playback Capture",
+        "description": "When captions and protocol extraction fail, Playwright plays the operator-accessible watch page, records HTMLMediaElement.captureStream() audio at playbackRate 1.5-2.0, then rescales ASR timestamps onto the original timeline. OS loopback is last resort only.",
+        "category": "builder-architecture",
+        "path": "docs/architecture/multimedia-agent-architecture.md",
+        "tags": ["builder", "architecture", "asr", "slow-track", "playwright", "captureStream"]
       },
       "relationships": {
         "parent": "knowledge:builder:root",

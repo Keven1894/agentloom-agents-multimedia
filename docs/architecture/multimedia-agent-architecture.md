@@ -118,27 +118,31 @@ In accordance with AgentLoom v3 core architecture, knowledge is strictly split i
  │ - Probe: Title, author, duration, chapter markers      │
  └───────────────────────────┬────────────────────────────┘
                              │
-            ┌────────────────┴────────────────┐
-            ▼                                 ▼
- ┌──────────────────────┐          ┌──────────────────────┐
- │ Stage 2A: Fast Track │          │ Stage 2B: Heavy Path │
- │ Official / Auto-Subs │          │ Direct Audio Stream  │
- │ (0 cost, 2-5 sec)    │          │ (Format 140 / m4a)   │
- └──────────┬───────────┘          └──────────┬───────────┘
-            │ Subtitles Available             │ Subtitles Disabled / Custom Audio
-            │                                 ▼
-            │                      ┌──────────────────────┐
-            │                      │ Audio Preprocessor   │
-            │                      │ - Stream chunking    │
-            │                      │ - Downsample / 16kHz │
-            │                      └──────────┬───────────┘
-            │                                 ▼
-            │                      ┌──────────────────────┐
-            │                      │ ASR Engine           │
-            │                      │ Whisper API / Local  │
-            │                      └──────────┬───────────┘
-            └────────────────┬────────────────┘
-                             │
+        ┌────────────────────┼────────────────────┐
+        ▼                    ▼                    ▼
+ ┌──────────────┐   ┌──────────────┐   ┌──────────────────────┐
+ │ 2A Fast Track│   │ 2B Heavy Path│   │ 2C Slow Track        │
+ │ Official /   │   │ yt-dlp audio │   │ Browser playback +   │
+ │ auto captions│   │ format 140   │   │ in-page audio capture│
+ │ 0 cost, 2-5s │   │ seconds–mins │   │ wall-clock ≈ T/rate  │
+ └──────┬───────┘   └──────┬───────┘   └──────────┬───────────┘
+        │ captions OK      │ extract OK           │ 2A and 2B fail
+        │                  ▼                      │ (cipher, login,
+        │           ┌──────────────┐              │  blob/MSE only)
+        │           │ Preprocess   │              ▼
+        │           │ 16kHz / 24MB │       ┌──────────────┐
+        │           └──────┬───────┘       │ Play in Chromium│
+        │                  │               │ playbackRate    │
+        │                  │               │ 1.5x–2.0x       │
+        │                  │               │ captureStream() │
+        │                  │               └──────┬─────────┘
+        │                  │                      │ rescale t *= rate
+        │                  ▼                      ▼
+        │           ┌──────────────────────────────────────┐
+        │           │ ASR Engine (Whisper API / Local)     │
+        │           └──────────────────┬───────────────────┘
+        └──────────────────────────────┘
+                                       │
  ┌───────────────────────────▼────────────────────────────┐
  │ Stage 3: Structural Alignment & Chunking               │
  │ - Align transcript text with native chapter markers    │
@@ -206,6 +210,33 @@ The video metadata already contains rich temporal anchors:
 - **Historical Analogy**: 1995 Netscape IPO sparked the commercial web boom...
 ```
 
+### 5.4 Stage 2C Slow Track: Browser Playback Capture (Authorized Personal Study Bridge)
+
+Fast Track and Heavy Path both assume the agent can fetch a machine-readable caption file or a downloadable audio object via public protocols. That assumption fails on modern educational platforms, paid developer tutorials, and specialized learning apps where:
+- The platform employs Media Source Extensions (MSE), Blob URLs, rotating tokens, or app-specific web players specifically designed to prevent unauthorized scraping and video piracy.
+- Universal command-line downloaders like `yt-dlp` cannot extract the audio streams.
+- However, the user **has legitimately purchased the tutorial/course and possesses full authorization to watch, study, and take personal notes**.
+
+**Slow Track acts as an Authorized Personal Study Bridge (合法购买教程与个人学习知识桥梁)**. It does not attempt to bypass paywalls or circumvent encryption (which is neither feasible nor intended). Instead, it operates entirely within the user's authorized browser session:
+- As the user plays their purchased course, the agent captures the **decoded in-page audio element** directly (`HTMLMediaElement.captureStream()`), optionally accelerated at 1.5×–2.0× `playbackRate`.
+- It transcribes and distills the lesson into structured study notes, timestamped chapter outlines, and personal knowledge graphs.
+- This empowers users who legitimately invest in educational content to directly connect their purchased knowledge into their personal AgentLoom brain for note-taking, revision, and agentic skills synthesis.
+
+Preferred capture stack (isolated, no system-wide loopback):
+1. Playwright / Chromium opens the authorized course URL (with user session/cookies) and waits for `HTMLMediaElement`.
+2. Set `video.playbackRate` (default **1.5**, aggressive **2.0**; never above 2.0 for Chinese speech).
+3. `video.captureStream()` → take the audio track → `MediaRecorder` (`audio/webm;codecs=opus`).
+4. After `ended`, downsample to 16 kHz mono and send to ASR.
+5. **Invariant**: rescale every ASR timestamp back onto the original timeline: `t_original = t_asr × playbackRate`. Without this step, chapter alignment and `?t=` evidence links are wrong.
+
+Fallbacks only if `captureStream()` is blocked:
+- Chromium tab-audio capture (extension / CDP).
+- OS loopback (WASAPI on Windows) as last resort — it mixes other desktop audio and is not the default.
+
+**Why speed-up is worth it**: Slow Track wall-clock is bounded by play time. A 35-minute video at 2.0× finishes capture in ~18 minutes, and cloud Whisper bills the **uploaded** duration, so ASR cost also halves. Pitch-preserving `playbackRate` is required; do not use crude resampling that raises pitch.
+
+**Routing rule**: Slow Track is the fallback bridge, activated when Fast Track and Heavy Path cannot extract streams, bridging legitimately accessible course lessons into personal agent memory.
+
 ---
 
 ## 6. The Agent-Native UI & HITL Review Portal: The AgentLoom HITL Paradigm
@@ -234,7 +265,7 @@ To support this governance principle at the micro-agent level, **every AgentLoom
 ### 6.1 Pillar 1: Self-Profile & Capabilities Showcase
 The agent's built-in UI introduces itself, explaining its role, operational envelope, and available toolsets:
 - **Identity & Status**: Displays agent name (`MediaLoom`), role definition, framework version, and environment readiness (e.g., OpenAI API Key status, `ffmpeg` binary detection, cache disk usage).
-- **Pipeline Architecture & Capabilities**: Interactive visual walkthrough of the dual-path ingestion pipeline (Fast Track subtitle extraction vs. Heavy Path audio extraction + Whisper ASR), supported file formats, and distillation capabilities.
+- **Pipeline Architecture & Capabilities**: Interactive visual walkthrough of the three-path ingestion pipeline (Fast Track captions, Heavy Path stream extraction, Slow Track browser capture) and distillation capabilities.
 - **Active Skills & Behaviors Catalog**: Live directory of operational `builder` skills (probing, chunking, transcribing, chapter anchoring) and runtime constraints.
 
 ### 6.2 Pillar 2: Data & Digest Explorer
