@@ -5,7 +5,7 @@
 **Parent Framework**: [AgentLoom](https://github.com/Keven1894/AgentLoom) (by Dr. Boyuan (Keven) Guan)  
 **Classification**: Personal Open-Source Research Agent  
 **Repository**: `Keven1894/agentloom-agents-multimedia`  
-**Working Directory**: `C:\projects\03_personal-agents\agentloom-agents-multimedia`  
+**Repository Scope**: `agentloom-agents-multimedia` (Portable Root)  
 
 ---
 
