@@ -21,6 +21,10 @@ def fetch_fast_transcript(video_id: str, languages: Optional[List[str]] = None) 
         ytt_api = YouTubeTranscriptApi()
         transcript_list = ytt_api.list(video_id)
         transcript = transcript_list.find_transcript(languages)
-        return transcript.fetch()
+        fetched = transcript.fetch()
+        # youtube-transcript-api >= 1.0 returns FetchedTranscript objects.
+        if hasattr(fetched, "to_raw_data"):
+            return fetched.to_raw_data()
+        return list(fetched)
     except (TranscriptsDisabled, NoTranscriptFound, Exception):
         return None
