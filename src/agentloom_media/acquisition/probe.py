@@ -4,6 +4,14 @@ from typing import Any, Dict, List, Optional
 import yt_dlp
 
 
+def _iso_date(value: Optional[str]) -> Optional[str]:
+    """Convert yt-dlp's YYYYMMDD to YYYY-MM-DD. Anything else is not a date we can use."""
+    text = str(value or "").strip()
+    if len(text) != 8 or not text.isdigit():
+        return None
+    return f"{text[0:4]}-{text[4:6]}-{text[6:8]}"
+
+
 def probe_media(url: str) -> Dict[str, Any]:
     """Probe video/audio URL for metadata, chapters, subtitles, and audio streams without downloading.
 
@@ -56,6 +64,10 @@ def probe_media(url: str) -> Dict[str, Any]:
             "url": url,
             "title": title,
             "duration": duration,
+            # Observation time for every claim distilled from this item. A platform-behaviour
+            # claim is only meaningful relative to when it was made, so this feeds the KG's
+            # `observed_at` axis; yt-dlp gives YYYYMMDD.
+            "upload_date": _iso_date(info.get("upload_date")),
             "channel": channel,
             "description": description,
             "chapters": chapters,
