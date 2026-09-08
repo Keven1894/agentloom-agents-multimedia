@@ -25,12 +25,14 @@ def transcribe_audio_file(
         prompt: Optional prompt to guide vocabulary or style.
 
     Returns:
-        Dict containing full text and segment-level timestamps.
+        Dict with full text, segment-level timestamps, and the engine identity used
+        (needed so cached transcripts record which engine produced them).
     """
     key = api_key or os.environ.get("OPENAI_API_KEY")
     if not key:
         raise ValueError("OPENAI_API_KEY must be provided or set in environment.")
 
+    model = (os.environ.get("ASR_MODEL") or "whisper-1").strip()
     client = openai.OpenAI(api_key=key)
 
     # Prepare chunks (each < 24MB)
@@ -38,11 +40,12 @@ def transcribe_audio_file(
 
     combined_text = []
     combined_segments = []
+    detected_language = language
 
     for chunk_file, offset_sec in chunks:
         with open(chunk_file, "rb") as f:
             response = client.audio.transcriptions.create(
-                model="whisper-1",
+                model=model,
                 file=f,
                 response_format="verbose_json",
                 timestamp_granularities=["segment"],
@@ -52,6 +55,7 @@ def transcribe_audio_file(
 
         data = response.model_dump() if hasattr(response, "model_dump") else dict(response)
         combined_text.append(data.get("text", ""))
+        detected_language = detected_language or data.get("language")
 
         for seg in data.get("segments", []):
             seg_dict = dict(seg)
@@ -62,4 +66,6 @@ def transcribe_audio_file(
     return {
         "text": " ".join(combined_text),
         "segments": combined_segments,
+        "engine": f"openai:{model}",
+        "language": detected_language,
     }

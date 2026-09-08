@@ -1,0 +1,28 @@
+# ASR vocabulary bias (Whisper `initial_prompt`).
+#
+# One term per line; `#` comments and blank lines ignored. Keep this SHORT: the API caps the
+# prompt at 224 tokens, and a long list dilutes the bias rather than strengthening it.
+#
+# Add a term when ASR demonstrably mis-renders it, not speculatively. Override per run with
+# ASR_GLOSSARY (comma-separated) or point ASR_GLOSSARY_FILE at another file.
+
+# Meta / performance advertising (DAOJIE channel)
+Meta
+Andromeda
+Advantage+
+Campaign
+Ad Set
+CBO
+ABO
+ROAS
+Creative Strategy
+Prospecting
+Remarketing
+Lookalike
+Pixel
+Conversion API
+
+# AgentLoom domain
+AgentLoom
+MediaLoom
+Knowledge Graph
