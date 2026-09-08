@@ -1,0 +1,239 @@
+{
+  "proposal_id": "prop:2026-09-07-meta广告变了立即关掉多余的campaign-你的结构比2200万美金的账户还复杂",
+  "timestamp": "2026-09-07T23:45:07.934846",
+  "source": {
+    "type": "multimedia",
+    "url": "https://www.youtube.com/watch?v=EtU45PsaL1M",
+    "title": "Meta广告变了！立即关掉多余的Campaign, 你的结构比2200万美金的账户还复杂",
+    "channel": "DAOJIE"
+  },
+  "target_track": "Track 3 (Skills Track)",
+  "model": "gpt-5.6-luna",
+  "boundary_source": "mechanical",
+  "anchor_validation": {
+    "anchors_seen": 17,
+    "anchors_valid": 17,
+    "anchors_rejected_unparsable": 0,
+    "anchors_rejected_out_of_range": 0,
+    "rejected_examples": []
+  },
+  "candidate_kg_nodes": [
+    {
+      "id": "meta-andromeda",
+      "name": "Meta Andromeda",
+      "type": "platform_algorithm",
+      "description": "Meta用于自动选择广告并匹配客户的算法体系，降低了人工受众切分的重要性。",
+      "relationships": [
+        {
+          "target": "creative-diversity",
+          "relation": "requires_more_input_from"
+        },
+        {
+          "target": "manual-audience-segmentation",
+          "relation": "reduces_dependence_on"
+        },
+        {
+          "target": "one-campaign-structure",
+          "relation": "supports"
+        }
+      ]
+    },
+    {
+      "id": "one-campaign-structure",
+      "name": "One Campaign Structure",
+      "type": "campaign_architecture",
+      "description": "以一个Campaign、一个Ad Set和多个多样化Ads为核心的集中式结构，适用于约85%的业务。",
+      "relationships": [
+        {
+          "target": "cbo",
+          "relation": "typically_uses"
+        },
+        {
+          "target": "learning-signal-consolidation",
+          "relation": "improves"
+        },
+        {
+          "target": "creative-diversity",
+          "relation": "hosts"
+        }
+      ]
+    },
+    {
+      "id": "creative-diversity",
+      "name": "Creative Diversity",
+      "type": "optimization_principle",
+      "description": "通过提供不同角度、形式和漏斗阶段的素材，增加Meta AI可选择的广告资源。",
+      "relationships": [
+        {
+          "target": "meta-andromeda",
+          "relation": "feeds_choices_to"
+        },
+        {
+          "target": "winning-ads-team",
+          "relation": "forms"
+        },
+        {
+          "target": "creative-strategy",
+          "relation": "is_part_of"
+        }
+      ]
+    },
+    {
+      "id": "winning-ads-team",
+      "name": "Winning Ads Team",
+      "type": "operating_model",
+      "description": "由多条相互协同的广告组成的素材团队，Meta AI根据客户和任务选择其中合适的成员。",
+      "relationships": [
+        {
+          "target": "meta-andromeda",
+          "relation": "is_selected_by"
+        },
+        {
+          "target": "creative-diversity",
+          "relation": "depends_on"
+        },
+        {
+          "target": "one-ad-set",
+          "relation": "can_be_consolidated_in"
+        }
+      ]
+    },
+    {
+      "id": "cbo",
+      "name": "CBO",
+      "type": "budget_management",
+      "description": "Campaign Budget Optimization，将预算管理集中在Campaign层级，视频建议One Campaign结构优先使用CBO。",
+      "relationships": [
+        {
+          "target": "one-campaign-structure",
+          "relation": "is_recommended_for"
+        },
+        {
+          "target": "campaign-objective",
+          "relation": "operates_under"
+        }
+      ]
+    },
+    {
+      "id": "campaign-objective",
+      "name": "Business Objective",
+      "type": "decision_variable",
+      "description": "决定Campaign目标的真实业务结果，例如购买数量、购买价值或Qualified Lead。",
+      "relationships": [
+        {
+          "target": "campaign-structure",
+          "relation": "determines"
+        },
+        {
+          "target": "conversion-volume",
+          "relation": "maps_to"
+        },
+        {
+          "target": "conversion-value",
+          "relation": "maps_to"
+        },
+        {
+          "target": "qualified-lead",
+          "relation": "maps_to"
+        }
+      ]
+    },
+    {
+      "id": "learning-signal-consolidation",
+      "name": "学习信号集中",
+      "type": "algorithmic_mechanism",
+      "description": "将广告和转化数据集中在较少的Ad Set中，使Meta更快完成学习并判断素材与客户的匹配关系。",
+      "relationships": [
+        {
+          "target": "one-campaign-structure",
+          "relation": "is_enabled_by"
+        },
+        {
+          "target": "learning-phase",
+          "relation": "accelerates"
+        },
+        {
+          "target": "campaign-fragmentation",
+          "relation": "is_opposed_to"
+        }
+      ]
+    },
+    {
+      "id": "multi-product-ecommerce",
+      "name": "多产品电商",
+      "type": "business_model",
+      "description": "拥有大量产品且希望优化购买价值的业务，可能需要在同一Campaign下按产品拆分Ad Set。",
+      "relationships": [
+        {
+          "target": "product-level-ad-set",
+          "relation": "may_require"
+        },
+        {
+          "target": "conversion-value",
+          "relation": "often_optimizes_for"
+        },
+        {
+          "target": "cbo",
+          "relation": "can_use"
+        }
+      ]
+    },
+    {
+      "id": "learning-phase",
+      "name": "Learning Phase",
+      "type": "platform_process",
+      "description": "Meta通过转化数据学习不同广告适合何种客户和投放场景的阶段。",
+      "relationships": [
+        {
+          "target": "conversion-volume",
+          "relation": "depends_on"
+        },
+        {
+          "target": "learning-signal-consolidation",
+          "relation": "benefits_from"
+        },
+        {
+          "target": "campaign-fragmentation",
+          "relation": "is_extended_by"
+        }
+      ]
+    },
+    {
+      "id": "creative-strategy",
+      "name": "Creative Strategy",
+      "type": "growth_strategy",
+      "description": "决定广告实际效果的创意与素材策略，包括素材形式、信息角度和漏斗阶段覆盖。",
+      "relationships": [
+        {
+          "target": "campaign-structure",
+          "relation": "outperforms_as_primary_performance_driver_after_setup"
+        },
+        {
+          "target": "creative-diversity",
+          "relation": "contains"
+        }
+      ]
+    },
+    {
+      "id": "campaign-fragmentation",
+      "name": "Campaign Fragmentation",
+      "type": "risk",
+      "description": "将预算、广告和转化数据拆散到过多Campaign或Ad Set中的做法，可能增加算法困扰并延长学习期。",
+      "relationships": [
+        {
+          "target": "learning-phase",
+          "relation": "can_delay"
+        },
+        {
+          "target": "learning-signal-consolidation",
+          "relation": "reduces"
+        },
+        {
+          "target": "one-campaign-structure",
+          "relation": "is_reduced_by"
+        }
+      ]
+    }
+  ],
+  "status": "pending_human_review"
+}

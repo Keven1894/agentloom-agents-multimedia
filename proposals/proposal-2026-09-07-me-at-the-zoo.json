@@ -1,0 +1,38 @@
+{
+  "proposal_id": "prop:2026-09-07-me-at-the-zoo",
+  "timestamp": "2026-09-07T22:43:53.977842",
+  "source": {
+    "type": "multimedia",
+    "url": "https://www.youtube.com/watch?v=jNQXAC9IVRw",
+    "title": "Me at the zoo",
+    "channel": "jawed"
+  },
+  "target_track": "Track 3 (Skills Track)",
+  "candidate_kg_nodes": [
+    {
+      "id": "1",
+      "name": "Elephants",
+      "type": "Animal",
+      "description": "Large mammals known for their long trunks.",
+      "relationships": [
+        {
+          "target": "2",
+          "relation": "feature"
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "name": "Trunks",
+      "type": "Anatomical Feature",
+      "description": "Long appendages used by elephants for various functions.",
+      "relationships": [
+        {
+          "target": "1",
+          "relation": "part_of"
+        }
+      ]
+    }
+  ],
+  "status": "pending_human_review"
+}

@@ -1,0 +1,228 @@
+{
+  "proposal_id": "prop:2026-09-08-meta广告andromeda一切都变了你关掉的loser-ads才是真正的winning-ads3步重新判断",
+  "timestamp": "2026-09-08T01:36:47.239243",
+  "source": {
+    "type": "multimedia",
+    "url": "https://www.youtube.com/watch?v=VFjup6AbQOM",
+    "title": "Meta广告Andromeda一切都变了：你关掉的Loser Ads才是真正的Winning Ads｜3步重新判断",
+    "channel": "DAOJIE"
+  },
+  "target_track": "Track 3 (Skills Track)",
+  "model": "gpt-5.6-luna",
+  "boundary_source": "mechanical",
+  "transcript_provenance": {
+    "route": "heavy",
+    "source": "asr",
+    "engine": "whisper_api",
+    "model": "whisper-1",
+    "timing_granularity": "segment",
+    "language": "chinese",
+    "reused": false,
+    "normalization": {
+      "script": "simplified",
+      "opencc_config": "t2s",
+      "applied": true,
+      "asr_initial_prompt_terms": true
+    },
+    "utterance_count": 434,
+    "pipeline_version": "p1"
+  },
+  "anchor_validation": {
+    "anchors_seen": 9,
+    "anchors_valid": 9,
+    "anchors_rejected_unparsable": 0,
+    "anchors_rejected_out_of_range": 0,
+    "rejected_examples": []
+  },
+  "candidate_kg_nodes": [
+    {
+      "id": "meta-andromeda",
+      "name": "Meta Andromeda",
+      "type": "algorithm",
+      "description": "Meta广告系统中的自动化投放与素材匹配机制，根据受众和认知阶段检索、分配广告素材。",
+      "relationships": [
+        {
+          "target": "audience-stage",
+          "relation": "matches_ads_to"
+        },
+        {
+          "target": "creative-team",
+          "relation": "enables_optimization_of"
+        },
+        {
+          "target": "traditional-targeting",
+          "relation": "reduces_dependence_on"
+        }
+      ]
+    },
+    {
+      "id": "audience-stage",
+      "name": "受众认知阶段",
+      "type": "marketing_concept",
+      "description": "用户从问题未觉察、问题意识、方案意识到购买决策的不同心理状态。",
+      "relationships": [
+        {
+          "target": "ad-creative",
+          "relation": "requires_different_messaging_from"
+        },
+        {
+          "target": "funnel-stages",
+          "relation": "maps_to"
+        },
+        {
+          "target": "customer-avatar",
+          "relation": "varies_with"
+        }
+      ]
+    },
+    {
+      "id": "customer-avatar",
+      "name": "Customer Avatar",
+      "type": "marketing_concept",
+      "description": "产品目标用户的具体画像和购买动机，例如关注自身营养的成年人或担心孩子不吃菜的父母。",
+      "relationships": [
+        {
+          "target": "audience-stage",
+          "relation": "contains_multiple"
+        },
+        {
+          "target": "ad-creative",
+          "relation": "guides_creation_of"
+        }
+      ]
+    },
+    {
+      "id": "ad-creative",
+      "name": "广告创意",
+      "type": "asset",
+      "description": "向特定用户画像和认知阶段传递产品信息的广告素材。",
+      "relationships": [
+        {
+          "target": "funnel-stages",
+          "relation": "serves"
+        },
+        {
+          "target": "creative-team",
+          "relation": "contributes_to"
+        },
+        {
+          "target": "meta-andromeda",
+          "relation": "is_distributed_by"
+        }
+      ]
+    },
+    {
+      "id": "funnel-stages",
+      "name": "营销漏斗",
+      "type": "framework",
+      "description": "由Top Funnel、Middle Funnel和Bottom Funnel组成的用户教育与转化路径。",
+      "relationships": [
+        {
+          "target": "top-funnel-ad",
+          "relation": "includes"
+        },
+        {
+          "target": "bottom-funnel-ad",
+          "relation": "includes"
+        },
+        {
+          "target": "conversion",
+          "relation": "leads_to"
+        }
+      ]
+    },
+    {
+      "id": "top-funnel-ad",
+      "name": "Top Funnel广告",
+      "type": "ad_role",
+      "description": "主要负责触达、教育和建立问题意识的广告，可能表现为高Spend、低直接ROAS。",
+      "relationships": [
+        {
+          "target": "audience-education",
+          "relation": "creates"
+        },
+        {
+          "target": "bottom-funnel-ad",
+          "relation": "feeds"
+        },
+        {
+          "target": "account-performance",
+          "relation": "supports_long_term"
+        }
+      ]
+    },
+    {
+      "id": "bottom-funnel-ad",
+      "name": "Bottom Funnel广告",
+      "type": "ad_role",
+      "description": "面向已经被触达或教育过的用户，承担最终转化和收割任务的广告。",
+      "relationships": [
+        {
+          "target": "top-funnel-ad",
+          "relation": "depends_on"
+        },
+        {
+          "target": "conversion",
+          "relation": "drives"
+        }
+      ]
+    },
+    {
+      "id": "creative-team",
+      "name": "Winning Ads Team",
+      "type": "operating_model",
+      "description": "由承担不同漏斗和用户沟通角色的多条广告组成的协同创意组合，而非单一赢家广告。",
+      "relationships": [
+        {
+          "target": "ad-creative",
+          "relation": "consists_of"
+        },
+        {
+          "target": "account-performance",
+          "relation": "improves"
+        },
+        {
+          "target": "meta-andromeda",
+          "relation": "is_optimized_by"
+        }
+      ]
+    },
+    {
+      "id": "account-performance",
+      "name": "账户整体表现",
+      "type": "metric_scope",
+      "description": "从账户或广告组合层面观察Conversion Value、Purchase、ROAS和长期转化效率。",
+      "relationships": [
+        {
+          "target": "ad-decision",
+          "relation": "should_guide"
+        },
+        {
+          "target": "creative-team",
+          "relation": "measures"
+        }
+      ]
+    },
+    {
+      "id": "ad-decision",
+      "name": "广告决策",
+      "type": "process",
+      "description": "根据广告组合、漏斗角色和账户长期表现决定保留、调整、暂停或扩展广告。",
+      "relationships": [
+        {
+          "target": "account-performance",
+          "relation": "uses"
+        },
+        {
+          "target": "loser-ad",
+          "relation": "reassesses"
+        },
+        {
+          "target": "winning-ad",
+          "relation": "does_not_rely_only_on"
+        }
+      ]
+    }
+  ],
+  "status": "pending_human_review"
+}
