@@ -119,8 +119,11 @@
             <!-- Model Selection -->
             <div class="w-full md:w-56">
               <select id="ingest-model-select" class="w-full py-3 px-3 bg-slate-900 border border-slate-700 rounded-xl text-sm text-slate-200 focus:outline-none focus:border-indigo-500 transition">
-                <option value="gpt-4o">GPT-4o (High Precision)</option>
-                <option value="gpt-4o-mini">GPT-4o-mini (Cost-Optimized)</option>
+                <option value="gpt-5.6-luna" selected>GPT-5.6 Luna (default, cheap + current)</option>
+                <option value="gpt-5.6-terra">GPT-5.6 Terra (balanced)</option>
+                <option value="gpt-5.6-sol">GPT-5.6 Sol (flagship)</option>
+                <option value="gpt-4o-mini">GPT-4o-mini (legacy)</option>
+                <option value="gpt-4o">GPT-4o (legacy)</option>
               </select>
             </div>
 
@@ -768,6 +771,9 @@
                 <!-- Review Action Buttons -->
                 ${isPending ? `
                   <div class="flex items-center gap-2">
+                    <a href="/review/${encodeURIComponent(p._file_name)}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition">
+                      <i class="fa-solid fa-magnifying-glass-chart"></i> Review Evidence
+                    </a>
                     <button onclick="submitReview('${p._file_name}', 'approve')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition">
                       <i class="fa-solid fa-check"></i> Approve & Canonize
                     </button>

@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MediaLoom — Evidence Review</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  .custom-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+  .custom-scroll::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+  .utt.active { background: rgba(99,102,241,.22); border-left-color: #6366f1; }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-200 antialiased">
+
+<header class="border-b border-slate-800 bg-slate-900/70 sticky top-0 z-20 backdrop-blur">
+  <div class="max-w-[1800px] mx-auto px-5 py-3 flex items-center gap-4">
+    <a href="/" class="text-xs text-slate-400 hover:text-white">← Portal</a>
+    <div class="flex-1 min-w-0">
+      <h1 id="title" class="font-bold text-white truncate">Loading…</h1>
+      <p id="subtitle" class="text-xs text-slate-500 truncate"></p>
+    </div>
+    <div id="summary" class="text-xs text-slate-400 font-mono whitespace-nowrap"></div>
+  </div>
+</header>
+
+<main class="max-w-[1800px] mx-auto px-5 py-5 grid grid-cols-12 gap-5">
+
+  <!-- Player + transcript -->
+  <section class="col-span-12 xl:col-span-5 space-y-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+      <div id="player-host" class="aspect-video bg-black"></div>
+      <div class="p-3 border-t border-slate-800 flex items-center gap-3 text-xs">
+        <span id="clock" class="font-mono text-indigo-300">00:00</span>
+        <button onclick="nudge(-5)" class="px-2 py-1 bg-slate-800 rounded hover:bg-slate-700">−5s</button>
+        <button onclick="nudge(5)" class="px-2 py-1 bg-slate-800 rounded hover:bg-slate-700">+5s</button>
+        <label class="ml-auto flex items-center gap-1.5 text-slate-400 cursor-pointer">
+          <input type="checkbox" id="follow" checked class="accent-indigo-500">
+          Follow transcript
+        </label>
+      </div>
+    </div>
+
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col" style="height:520px">
+      <div class="px-4 py-2.5 border-b border-slate-800 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-white">Transcript</h2>
+        <span id="granularity" class="text-[11px] font-mono text-slate-500"></span>
+      </div>
+      <div id="transcript" class="flex-1 overflow-y-auto custom-scroll p-2 space-y-0.5 text-sm"></div>
+    </div>
+  </section>
+
+  <!-- Review targets -->
+  <section class="col-span-12 xl:col-span-7 space-y-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+      <div class="flex items-center gap-2 flex-wrap" id="filters"></div>
+      <div id="coverage" class="mt-3 text-xs text-slate-400"></div>
+      <p class="mt-2 text-[11px] text-slate-500 leading-relaxed">
+        An evidence link is reviewed separately from the claim it supports. Rejecting a citation
+        does not reject the claim — a correct claim with a wrong citation is recorded as exactly
+        that.
+      </p>
+    </div>
+
+    <div id="items" class="space-y-3"></div>
+  </section>
+</main>
+
+<script>
+const PROPOSAL = decodeURIComponent(location.pathname.split('/review/')[1] || '');
+let BUNDLE = null, PLAYER = null, DECISIONS = {}, FILTER = 'all', UTTS = [], activeUtt = -1;
+
+const fmt = s => {
+  if (s === null || s === undefined) return '--:--';
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), x = s%60;
+  const mm = String(m).padStart(2,'0'), ss = String(x).padStart(2,'0');
+  return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+};
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const keyOf = (kind, id, idx) => `${kind}|${id}|${idx === null || idx === undefined ? -1 : idx}`;
+
+// ---- YouTube IFrame API ----
+// Deep links accept whole seconds only; the API accepts floats. We use the API for in-portal
+// seeking so evidence lands on the exact moment, and keep integer-second URLs for sharing.
+let ytReady = false, pendingSeek = null;
+function onYouTubeIframeAPIReady(){ ytReady = true; if (BUNDLE) mountPlayer(); }
+(function(){ const s = document.createElement('script'); s.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(s); })();
+
+function videoIdOf(url){
+  const m = String(url||'').match(/[?&]v=([\w-]{6,})/) || String(url||'').match(/youtu\.be\/([\w-]{6,})/);
+  return m ? m[1] : null;
+}
+
+function mountPlayer(){
+  const vid = BUNDLE.source?.media_id || videoIdOf(BUNDLE.source?.url);
+  if (!vid || !ytReady) return;
+  PLAYER = new YT.Player('player-host', {
+    videoId: vid,
+    playerVars: { enablejsapi: 1, origin: location.origin, rel: 0, modestbranding: 1 },
+    events: { onReady(){ if (pendingSeek !== null) { seek(pendingSeek); pendingSeek = null; } } }
+  });
+}
+
+function seek(seconds){
+  if (!PLAYER || !PLAYER.seekTo) { pendingSeek = seconds; return; }
+  PLAYER.seekTo(Number(seconds), true);
+  PLAYER.playVideo?.();
+}
+function nudge(delta){
+  if (!PLAYER?.getCurrentTime) return;
+  seek(Math.max(0, PLAYER.getCurrentTime() + delta));
+}
+
+// Poll for the clock and transcript highlight. Deliberately no auto-advance through evidence:
+// since the March 2026 embed redesign every programmatic seekTo() wakes the player chrome for
+// ~4s, so a timer-driven walk through citations would be unusable.
+setInterval(() => {
+  if (!PLAYER?.getCurrentTime) return;
+  const t = PLAYER.getCurrentTime();
+  document.getElementById('clock').textContent = fmt(t);
+  highlight(t);
+}, 500);
+
+// Binary search from currentTime to utterance index.
+function utteranceAt(t){
+  let lo = 0, hi = UTTS.length - 1, found = -1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    if (UTTS[mid].t0 <= t) { found = mid; lo = mid + 1; } else { hi = mid - 1; }
+  }
+  return found;
+}
+
+function highlight(t){
+  const idx = utteranceAt(t);
+  if (idx === activeUtt) return;
+  document.querySelector(`.utt[data-i="${activeUtt}"]`)?.classList.remove('active');
+  activeUtt = idx;
+  const el = document.querySelector(`.utt[data-i="${idx}"]`);
+  if (el) {
+    el.classList.add('active');
+    if (document.getElementById('follow').checked) el.scrollIntoView({block:'center', behavior:'smooth'});
+  }
+}
+
+// ---- rendering ----
+function renderTranscript(){
+  const g = BUNDLE.transcript?.timing_granularity;
+  document.getElementById('granularity').textContent = g
+    ? `${g}-level timing` + (g === 'word' ? '' : ' — no word timings, highlighting is per utterance')
+    : 'no cached transcript';
+
+  UTTS = BUNDLE.transcript?.utterances || [];
+  document.getElementById('transcript').innerHTML = UTTS.length
+    ? UTTS.map((u,i) => `
+      <div class="utt border-l-2 border-transparent pl-2 py-1 rounded cursor-pointer hover:bg-slate-800/60"
+           data-i="${i}" onclick="seek(${u.t0})">
+        <span class="font-mono text-[11px] text-slate-500 mr-2">${fmt(u.t0)}</span><span>${esc(u.text)}</span>
+      </div>`).join('')
+    : `<p class="p-3 text-xs text-slate-500">No cached transcript for this media item.</p>`;
+}
+
+function renderFilters(){
+  const kinds = ['all', ...Object.keys(BUNDLE.coverage.by_kind)];
+  document.getElementById('filters').innerHTML = kinds.map(k => {
+    const n = k === 'all' ? BUNDLE.coverage.total : BUNDLE.coverage.by_kind[k].total;
+    const on = k === FILTER;
+    return `<button onclick="setFilter('${k}')" class="px-2.5 py-1 rounded-lg text-xs font-medium ${on?'bg-indigo-600 text-white':'bg-slate-800 text-slate-300 hover:bg-slate-700'}">
+      ${k.replace(/_/g,' ')} <span class="opacity-60">${n}</span></button>`;
+  }).join('');
+
+  const c = BUNDLE.coverage;
+  document.getElementById('coverage').innerHTML =
+    `<span class="text-emerald-400">${c.grounded} grounded</span> · ` +
+    `<span class="${c.ungrounded?'text-amber-400':'text-slate-500'}">${c.ungrounded} without any span</span> · ` +
+    `${c.total} reviewable targets`;
+}
+function setFilter(k){ FILTER = k; renderFilters(); renderItems(); }
+
+function verdictOf(kind, id, idx){ return DECISIONS[keyOf(kind,id,idx)]?.verdict || null; }
+
+// Full class strings rather than interpolated colour names: the Tailwind play CDN generates
+// styles from the rendered DOM, and a partially interpolated class is easy to get silently
+// wrong.
+const ACTIVE_CLASS = {
+  accept: 'bg-emerald-500/25 text-emerald-200 border-emerald-500/50',
+  reject: 'bg-rose-500/25 text-rose-200 border-rose-500/50',
+  unsure: 'bg-amber-500/25 text-amber-200 border-amber-500/50',
+};
+const IDLE_CLASS = 'bg-slate-800/70 text-slate-400 border-slate-700 hover:text-white';
+
+function buttons(kind, id, idx){
+  const cur = verdictOf(kind, id, idx);
+  return ['accept','reject','unsure'].map(v => `
+    <button onclick="decide('${kind}','${id}',${idx===null?'null':idx},'${v}')"
+      class="px-2 py-0.5 rounded text-[11px] font-medium border ${cur===v?ACTIVE_CLASS[v]:IDLE_CLASS}">${v}</button>`
+  ).join('');
+}
+
+function renderItems(){
+  const items = BUNDLE.items.filter(i => FILTER === 'all' || i.kind === FILTER);
+  document.getElementById('items').innerHTML = items.map(item => {
+    const itemVerdict = verdictOf(item.kind, item.id, null);
+    const ring = itemVerdict === 'accept' ? 'border-emerald-600/40'
+               : itemVerdict === 'reject' ? 'border-rose-600/40'
+               : itemVerdict === 'unsure' ? 'border-amber-600/40' : 'border-slate-800';
+
+    const ev = item.evidence.length ? item.evidence.map((e,idx) => `
+      <div class="flex items-start gap-2 bg-slate-950/60 border border-slate-800 rounded-lg p-2">
+        <button onclick="seek(${e.t0})" class="px-2 py-0.5 rounded bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 font-mono text-[11px] hover:bg-indigo-600/40 shrink-0">
+          ▶ ${fmt(e.t0)}${e.t1?`–${fmt(e.t1)}`:''}
+        </button>
+        <div class="flex-1 min-w-0">
+          ${e.quote ? `<p class="text-[12px] text-slate-400 leading-snug">“${esc(e.quote)}”</p>` : `<p class="text-[11px] text-slate-600 italic">Anchor only — no quote captured.</p>`}
+          <div class="mt-1.5 flex items-center gap-1">
+            <span class="text-[10px] uppercase tracking-wide text-slate-600 mr-1">citation</span>
+            ${buttons(item.kind, item.id, idx)}
+          </div>
+        </div>
+      </div>`).join('')
+      : `<p class="text-[11px] text-amber-500/80 italic">No evidence span. This claim cannot be checked against the recording.</p>`;
+
+    return `
+      <article class="bg-slate-900 border ${ring} rounded-2xl p-4">
+        <div class="flex items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] font-mono text-slate-400">${esc(item.kind)}</span>
+              <span class="text-[11px] text-slate-500 truncate">${esc(item.context||'')}</span>
+            </div>
+            <p class="text-sm text-white leading-snug">${esc(item.label)}</p>
+            ${item.detail ? `<p class="text-xs text-slate-400 mt-1 leading-snug">${esc(item.detail)}</p>` : ''}
+            ${item.meta?.observed_at ? `<p class="text-[11px] text-slate-500 mt-1 font-mono">observed ${esc(item.meta.observed_at)}${item.meta.valid_from||item.meta.valid_until?` · valid ${esc(item.meta.valid_from||'?')} → ${esc(item.meta.valid_until||'open')}`:' · no validity stated'}</p>` : ''}
+            ${item.meta?.surface_forms?.length > 1 ? `<p class="text-[11px] text-slate-500 mt-1">surfaces merged: ${item.meta.surface_forms.map(esc).join(' · ')}</p>` : ''}
+          </div>
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <span class="text-[10px] uppercase tracking-wide text-slate-600">claim</span>
+            <div class="flex gap-1">${buttons(item.kind, item.id, null)}</div>
+          </div>
+        </div>
+        <div class="mt-3 space-y-2">${ev}</div>
+      </article>`;
+  }).join('') || `<p class="text-sm text-slate-500 p-4">Nothing of this kind in the proposal.</p>`;
+}
+
+async function decide(kind, id, idx, verdict){
+  const res = await fetch(`/api/review/${encodeURIComponent(PROPOSAL)}/decision`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ kind, target_id: id, verdict, evidence_index: idx,
+                           reviewer: localStorage.getItem('reviewer') || 'portal-user' })
+  });
+  if (!res.ok) { alert('Could not record decision: ' + (await res.text())); return; }
+  const data = await res.json();
+  DECISIONS[keyOf(kind,id,idx)] = data.entry;
+  renderSummary(data.summary);
+  renderItems();
+}
+
+function renderSummary(s){
+  const i = s.counts.item, e = s.counts.evidence;
+  let text = `claims ${i.accept}✓ ${i.reject}✗ ${i.unsure}? · citations ${e.accept}✓ ${e.reject}✗ ${e.unsure}?`;
+  if (s.accepted_with_rejected_evidence.length)
+    text += ` · ${s.accepted_with_rejected_evidence.length} accepted with a rejected citation`;
+  document.getElementById('summary').textContent = text;
+}
+
+(async function init(){
+  const res = await fetch(`/api/review/${encodeURIComponent(PROPOSAL)}`);
+  if (!res.ok) { document.getElementById('title').textContent = 'Proposal not found'; return; }
+  BUNDLE = await res.json();
+  DECISIONS = BUNDLE.decisions || {};
+
+  document.getElementById('title').textContent = BUNDLE.source?.title || PROPOSAL;
+  const prov = BUNDLE.transcript_provenance || {};
+  const seg = BUNDLE.segmentation || {};
+  document.getElementById('subtitle').textContent =
+    [BUNDLE.source?.channel, prov.engine && `${prov.source}/${prov.engine}`,
+     prov.timing_granularity && `${prov.timing_granularity} timing`,
+     seg.method && `segmentation: ${seg.method}`].filter(Boolean).join(' · ');
+
+  renderTranscript(); renderFilters(); renderItems(); renderSummary(BUNDLE.summary);
+  if (ytReady) mountPlayer();
+})();
+</script>
+</body>
+</html>

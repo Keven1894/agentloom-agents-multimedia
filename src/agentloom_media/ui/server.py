@@ -23,6 +23,16 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from agentloom_media.ui.jobs import global_job_manager, IngestJob
+from agentloom_media.distillation.distiller import resolve_distillation_model
+from agentloom_media.review import (
+    build_review_items,
+    coverage,
+    current_decisions,
+    read_review,
+    record_decision,
+    summarize,
+)
+from agentloom_media.transcripts.store import load_transcript
 from dotenv import load_dotenv
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[3]
@@ -241,6 +251,102 @@ def list_proposals() -> List[Dict[str, Any]]:
     return results
 
 
+# ==========================================
+# 4b. Evidence-level review workbench (plan §6)
+# ==========================================
+class DecisionPayload(BaseModel):
+    kind: str
+    target_id: str
+    verdict: str
+    evidence_index: Optional[int] = None
+    note: Optional[str] = None
+    reviewer: str = "unknown"
+
+
+def _proposal_path(proposal_file: str) -> Path:
+    path = PROPOSALS_DIR / Path(proposal_file).name
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Proposal file not found")
+    return path
+
+
+@app.get("/review/{proposal_file}")
+def review_page(proposal_file: str) -> FileResponse:
+    _proposal_path(proposal_file)
+    return FileResponse(STATIC_DIR / "review.html")
+
+
+@app.get("/api/review/{proposal_file}")
+def get_review_bundle(proposal_file: str) -> Dict[str, Any]:
+    """Everything the workbench needs: proposal, targets, transcript, prior decisions."""
+    with open(_proposal_path(proposal_file), "r", encoding="utf-8") as f:
+        proposal = json.load(f)
+
+    items = build_review_items(proposal)
+    review = read_review(WORKSPACE_ROOT, proposal_file)
+
+    source = proposal.get("source") or {}
+    media_id = source.get("media_id") or source.get("id")
+
+    # The transcript panel needs utterances and, crucially, the timing granularity: word-level
+    # highlighting is a lie unless the ASR actually produced word timings.
+    transcript: Dict[str, Any] = {"utterances": [], "timing_granularity": None}
+    if media_id:
+        cached = load_transcript(WORKSPACE_ROOT, media_id)
+        if cached:
+            loaded = cached["transcript"]
+            transcript = {
+                "media_id": media_id,
+                "timing_granularity": loaded.timing_granularity,
+                "utterances": [
+                    {"id": u.id, "t0": u.t0, "t1": u.t1, "text": u.text}
+                    for u in loaded.utterances
+                ],
+            }
+
+    return {
+        "proposal_file": Path(proposal_file).name,
+        "source": source,
+        "segmentation": proposal.get("segmentation"),
+        "passes": proposal.get("passes"),
+        "transcript_provenance": proposal.get("transcript_provenance"),
+        "anchor_validation": proposal.get("anchor_validation"),
+        "document": proposal.get("document"),
+        "merge_candidates": (proposal.get("knowledge_graph") or {}).get(
+            "merge_candidates"
+        )
+        or [],
+        "items": items,
+        "coverage": coverage(items),
+        "transcript": transcript,
+        "decisions": current_decisions(review),
+        "summary": summarize(review),
+    }
+
+
+@app.post("/api/review/{proposal_file}/decision")
+def post_review_decision(
+    proposal_file: str, payload: DecisionPayload
+) -> Dict[str, Any]:
+    _proposal_path(proposal_file)
+    try:
+        entry = record_decision(
+            WORKSPACE_ROOT,
+            proposal_file,
+            kind=payload.kind,
+            target_id=payload.target_id,
+            verdict=payload.verdict,
+            evidence_index=payload.evidence_index,
+            note=payload.note,
+            reviewer=payload.reviewer,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    review = read_review(WORKSPACE_ROOT, proposal_file)
+    return {"ok": True, "entry": entry, "summary": summarize(review)}
+
+
 @app.post("/api/proposals/{proposal_file}/review")
 def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]:
     safe_name = Path(proposal_file).name
@@ -361,7 +467,10 @@ def review_proposal(proposal_file: str, payload: ReviewAction) -> Dict[str, Any]
 # ==========================================
 class SubmitIngestPayload(BaseModel):
     url: str
-    model: Optional[str] = "gpt-4o"
+    model: Optional[str] = None
+    route: Optional[str] = None
+    asr_engine: Optional[str] = None
+    synthesis_model: Optional[str] = None
 
 
 @app.post("/api/ingest/submit")
@@ -373,8 +482,11 @@ async def submit_ingest_job(payload: SubmitIngestPayload) -> Dict[str, Any]:
     global_job_manager.workspace_root = WORKSPACE_ROOT
     job = global_job_manager.create_job(
         url=url,
-        model=payload.model or "gpt-4o",
-        output_dir=WORKSPACE_ROOT
+        model=payload.model or resolve_distillation_model(),
+        output_dir=WORKSPACE_ROOT,
+        route=payload.route,
+        asr_engine=payload.asr_engine,
+        synthesis_model=payload.synthesis_model,
     )
     import asyncio
     asyncio.create_task(global_job_manager.run_job(job))
