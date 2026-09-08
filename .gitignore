@@ -36,6 +36,11 @@ env/
 
 # Media Caches & Large Binaries
 .cache/
+
+# Ephemeral working data: regenerable from the media URL plus data/transcripts/*/manifest.json.
+# Canonical knowledge lives in agents/, docs/digests/, and proposals/ and stays tracked.
+data/transcripts/
+data/*.db
 *.mp4
 *.m4a
 *.mp3
