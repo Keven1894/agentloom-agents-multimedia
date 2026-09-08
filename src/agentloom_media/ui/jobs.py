@@ -9,6 +9,7 @@ import os
 import time
 import uuid
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
@@ -16,21 +17,33 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from agentloom_media.acquisition.probe import probe_media
-from agentloom_media.acquisition.fast_transcript import fetch_fast_transcript
-from agentloom_media.acquisition.audio_extractor import extract_audio_stream
-from agentloom_media.audio.asr import transcribe_audio_file
-from agentloom_media.distillation.chapter_aligner import align_transcript_with_chapters
-from agentloom_media.distillation.distiller import distill_aligned_chapters
-from agentloom_media.proposals.emitter import emit_distillation_artifacts
+from agentloom_media.transcripts.acquire import acquire_transcript
+from agentloom_media.distillation.distiller import resolve_distillation_model
+from agentloom_media.distillation.passes import resolve_synthesis_model
+from agentloom_media.distillation.pipeline import distill as distill_typed
+from agentloom_media.proposals.emitter_v2 import emit_typed_distillation
+from agentloom_media.search.embed import Embedder, embeddings_enabled
 
 logger = logging.getLogger("agentloom_media.jobs")
 
 
 class IngestJob:
-    def __init__(self, job_id: str, url: str, model: str = "gpt-4o", output_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        job_id: str,
+        url: str,
+        model: Optional[str] = None,
+        output_dir: Optional[Path] = None,
+        route: Optional[str] = None,
+        asr_engine: Optional[str] = None,
+        synthesis_model: Optional[str] = None,
+    ):
         self.job_id = job_id
         self.url = url
-        self.model = model
+        self.model = resolve_distillation_model(model)
+        self.synthesis_model = resolve_synthesis_model(synthesis_model)
+        self.route = route
+        self.asr_engine = asr_engine
         self.output_dir = output_dir or Path.cwd()
         self.status = "queued"  # queued, running, completed, failed
         self.stage = "queued"   # queued, probing, transcribing, aligning, distilling, emitting, completed, failed
@@ -39,6 +52,9 @@ class IngestJob:
         self.logs: List[Dict[str, str]] = []
         self.meta: Dict[str, Any] = {}
         self.artifacts: Dict[str, str] = {}
+        self.anchor_report: Optional[Dict[str, Any]] = None
+        self.transcript_provenance: Optional[Dict[str, Any]] = None
+        self.distillation_passes: Optional[Dict[str, str]] = None
         self.error: Optional[str] = None
         self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.started_at: Optional[str] = None
@@ -92,12 +108,18 @@ class IngestJob:
             "job_id": self.job_id,
             "url": self.url,
             "model": self.model,
+            "synthesis_model": self.synthesis_model,
             "status": self.status,
             "stage": self.stage,
             "progress": self.progress,
             "message": self.message,
             "meta": self.meta,
             "artifacts": self.artifacts,
+            "route": self.route,
+            "asr_engine": self.asr_engine,
+            "anchor_report": self.anchor_report,
+            "transcript_provenance": self.transcript_provenance,
+            "distillation_passes": self.distillation_passes,
             "error": self.error,
             "created_at": self.created_at,
             "started_at": self.started_at,
@@ -111,13 +133,24 @@ class JobManager:
         self.workspace_root = workspace_root or Path.cwd()
         self.jobs: Dict[str, IngestJob] = {}
 
-    def create_job(self, url: str, model: str = "gpt-4o", output_dir: Optional[Path] = None) -> IngestJob:
+    def create_job(
+        self,
+        url: str,
+        model: Optional[str] = None,
+        output_dir: Optional[Path] = None,
+        route: Optional[str] = None,
+        asr_engine: Optional[str] = None,
+        synthesis_model: Optional[str] = None,
+    ) -> IngestJob:
         job_id = f"job_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
         job = IngestJob(
             job_id=job_id,
             url=url,
             model=model,
-            output_dir=output_dir or self.workspace_root
+            output_dir=output_dir or self.workspace_root,
+            route=route,
+            asr_engine=asr_engine,
+            synthesis_model=synthesis_model,
         )
         self.jobs[job_id] = job
         return job
@@ -149,84 +182,98 @@ class JobManager:
             }
             job.log(f"Metadata verified: '{meta.get('title')}' by {meta.get('channel')} ({int(meta.get('duration', 0)//60)}m)")
 
-            # Stage 2: Transcribe (Check cache -> Fast Track -> Heavy Path)
-            job.update_stage("transcribing", 20, "Checking transcript cache and caption tracks...")
+            # Stage 2: Acquire a canonical transcript (cache -> captions -> ASR)
+            job.update_stage("transcribing", 20, "Acquiring canonical transcript...")
             repo_root = job.output_dir
-            cache_dir = repo_root / ".cache" / "transcripts"
-            cache_dir.mkdir(parents=True, exist_ok=True)
-            transcript_cache_file = cache_dir / f"{meta.get('id', 'media')}_segments.json"
 
-            segments = None
-            if transcript_cache_file.exists():
-                job.log(f"Cache hit: Found existing transcript segments at {transcript_cache_file.name}")
-                with open(transcript_cache_file, "r", encoding="utf-8") as f:
-                    segments = json.load(f)
-                job.update_stage("transcribing", 45, f"Loaded {len(segments)} segments from local cache.")
-            elif meta.get("id"):
-                job.log("Probing Fast Track (official & automatic subtitles)...")
-                raw_captions = await loop.run_in_executor(None, fetch_fast_transcript, meta["id"])
-                if raw_captions:
-                    job.log(f"Fast Track succeeded! Extracted {len(raw_captions)} caption entries.")
-                    segments = [
-                        {"start": c["start"], "end": c["start"] + c.get("duration", 0), "text": c["text"]}
-                        for c in raw_captions
-                    ]
-                    with open(transcript_cache_file, "w", encoding="utf-8") as f:
-                        json.dump(segments, f, ensure_ascii=False, indent=2)
-                    job.update_stage("transcribing", 50, f"Fast Track extracted {len(segments)} segments.")
-                else:
-                    job.log("Subtitles disabled or unavailable on Fast Track. Switching to Heavy Path...")
-
-            if not segments:
-                # Heavy Path: Extract audio stream format 140
-                job.update_stage("transcribing", 25, "Heavy Path: Extracting lightweight audio stream (format 140)...")
-                audio_cache_dir = repo_root / ".cache" / "audio"
-                audio_cache_dir.mkdir(parents=True, exist_ok=True)
-                audio_file = await loop.run_in_executor(None, extract_audio_stream, job.url, str(audio_cache_dir))
-                size_mb = audio_file.stat().st_size / (1024 * 1024)
-                job.log(f"Audio stream extracted: {audio_file.name} ({size_mb:.1f} MB)")
-
-                job.update_stage("transcribing", 35, f"Transcribing audio with Whisper ASR ({size_mb:.1f} MB)...")
-                asr_result = await loop.run_in_executor(None, transcribe_audio_file, audio_file)
-                raw_segments = asr_result.get("segments", [])
-                segments = [
-                    {"start": s.get("start", 0), "end": s.get("end", 0), "text": s.get("text", "")}
-                    for s in raw_segments
-                ]
-                job.log(f"Whisper ASR completed: Generated {len(segments)} segment timestamps.")
-                with open(transcript_cache_file, "w", encoding="utf-8") as f:
-                    json.dump(segments, f, ensure_ascii=False, indent=2)
-                job.update_stage("transcribing", 55, f"ASR transcription completed ({len(segments)} segments).")
-
-            # Stage 3: Align transcript with chapters
-            job.update_stage("aligning", 65, "Aligning transcript segments with video chapter markers...")
-            aligned_chapters = await loop.run_in_executor(
-                None, align_transcript_with_chapters, segments, meta.get("chapters", []), job.url
+            acquisition = await loop.run_in_executor(
+                None,
+                partial(
+                    acquire_transcript,
+                    meta,
+                    job.url,
+                    repo_root,
+                    engine=job.asr_engine,
+                    route=job.route,
+                    log=job.log,
+                ),
             )
-            job.log(f"Aligned into {len(aligned_chapters)} topical chapter blocks with hyperlink timestamp anchors.")
+            segments = acquisition.segments
+            job.transcript_provenance = acquisition.provenance()
+            job.log(f"Transcript ready ({acquisition.describe()}).")
+            if acquisition.timing_granularity != "word":
+                job.log(
+                    f"Anchors will be accurate to the {acquisition.timing_granularity} level; "
+                    "word-level seeking is unavailable with this engine."
+                )
+            job.update_stage(
+                "transcribing", 55, f"Transcript ready ({len(segments)} utterances)."
+            )
 
-            # Stage 4: Multi-perspective LLM Distillation
-            job.update_stage("distilling", 75, f"Synthesizing knowledge with LLM ({job.model})...")
-            from functools import partial
+            # Stage 3: Semantic segmentation and typed distillation passes
+            synthesis_model = resolve_synthesis_model(job.synthesis_model)
+            job.update_stage(
+                "distilling",
+                70,
+                f"Segmenting and distilling ({job.model}, synthesis on {synthesis_model})...",
+            )
+
+            embedder = Embedder() if embeddings_enabled() else None
+            if embedder is None:
+                job.log(
+                    "No embeddings available, so the transcript cannot be segmented by "
+                    "topic. It will be treated as one span."
+                )
+
             distill_fn = partial(
-                distill_aligned_chapters,
-                video_title=meta["title"],
-                channel=meta.get("channel", "Unknown"),
-                aligned_chapters=aligned_chapters,
-                model=job.model
+                distill_typed,
+                acquisition.transcript,
+                meta,
+                embedder=embedder,
+                model=job.model,
+                synthesis_model=synthesis_model,
+                log=job.log,
             )
-            distilled = await loop.run_in_executor(None, distill_fn)
-            cand_kg = distilled.get("candidate_kg_nodes", [])
-            cand_skills = distilled.get("candidate_skills", [])
-            job.log(f"Distillation completed: {len(cand_kg)} candidate KG nodes, {len(cand_skills)} candidate skills.")
+            result = await loop.run_in_executor(None, distill_fn)
+            job.distillation_passes = result.passes
 
-            # Stage 5: Emitting Artifacts & Proposal
+            if not result.segments:
+                raise RuntimeError(
+                    "Distillation produced no segments; "
+                    f"segmentation pass reported: {result.passes.get('segmentation')}"
+                )
+
+            # Stage 4: Emitting Artifacts & Proposal
             job.update_stage("emitting", 90, "Emitting AgentLoom 3-Track files and HITL review proposal...")
-            emitted = await loop.run_in_executor(
-                None, emit_distillation_artifacts, meta, distilled, aligned_chapters, repo_root
+            emit_fn = partial(
+                emit_typed_distillation,
+                meta,
+                result,
+                acquisition.transcript,
+                repo_root,
+                model=job.model,
+                synthesis_model=synthesis_model,
+                transcript_provenance=job.transcript_provenance,
             )
+            emitted = await loop.run_in_executor(None, emit_fn)
+            anchor_report = emitted.pop("_anchor_report", None)
             job.artifacts = {k: str(v) for k, v in emitted.items()}
             job.log("Artifacts written: Track 2 Digest, Candidate Skills, and Review Proposal.")
+
+            if anchor_report:
+                job.anchor_report = anchor_report
+                seen = anchor_report["anchors_seen"]
+                valid = anchor_report["anchors_valid"]
+                job.log(
+                    f"Anchor validation: {valid}/{seen} anchors resolved to real transcript times."
+                )
+                if seen - valid:
+                    job.log(
+                        f"Dropped {seen - valid} unverifiable anchors "
+                        f"(unparsable={anchor_report['anchors_rejected_unparsable']}, "
+                        f"out_of_range={anchor_report['anchors_rejected_out_of_range']}); "
+                        "affected claims have no evidence link."
+                    )
 
             # Completion
             job.status = "completed"
