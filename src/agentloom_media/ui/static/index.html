@@ -30,6 +30,8 @@
     .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
     .custom-scroll::-webkit-scrollbar-track { background: #1e293b; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    #overview-player-host, #overview-player-mount { width: 100%; height: 100%; }
+    #overview-player-host iframe { width: 100%; height: 100%; }
   </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
@@ -62,14 +64,14 @@
           <i class="fa-solid fa-id-card text-xs"></i> Agent Profile
         </button>
         <button onclick="switchTab('data')" id="tab-btn-data" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
-          <i class="fa-solid fa-photo-film text-xs"></i> Data & Digests
+          <i class="fa-solid fa-book-open text-xs"></i> Overview
         </button>
         <button onclick="switchTab('kg')" id="tab-btn-kg" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
           <i class="fa-solid fa-network-wired text-xs"></i> 3-Track KG
         </button>
         <button onclick="switchTab('review')" id="tab-btn-review" class="tab-btn px-3 py-2 text-sm font-medium rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition flex items-center gap-2">
           <i class="fa-solid fa-user-check text-xs"></i>
-          <span>Human Review Portal</span>
+          <span>Review Queue</span>
           <span id="pending-badge" class="ml-1 px-1.5 py-0.2 text-[10px] font-bold rounded-full bg-amber-400 text-slate-950">0</span>
         </button>
       </nav>
@@ -166,13 +168,15 @@
               <p id="job-message-display" class="text-xs text-indigo-400 mt-0.5">Initializing pipeline worker...</p>
             </div>
 
-            <!-- Jump to Review Button (shown upon completion) -->
-            <div id="job-completed-action" class="hidden">
-              <button onclick="switchTab('review')" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-emerald-500/20 flex items-center gap-2 transition animate-bounce">
-                <i class="fa-solid fa-user-check"></i>
-                <span>Open in Human Review Portal</span>
-                <i class="fa-solid fa-arrow-right text-xs"></i>
+            <div id="job-completed-action" class="hidden flex flex-wrap items-center gap-2">
+              <button id="job-overview-btn" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transition">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Read overview</span>
               </button>
+              <a id="job-review-link" href="#" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl text-xs font-bold border border-slate-700 flex items-center gap-2 transition">
+                <i class="fa-solid fa-magnifying-glass-chart"></i>
+                <span>Review evidence</span>
+              </a>
             </div>
           </div>
 
@@ -316,46 +320,32 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- TAB 2: DATA & DIGESTS EXPLORER             -->
+    <!-- TAB 2: CLIENT OVERVIEW                     -->
     <!-- ========================================== -->
     <div id="tab-data" class="tab-pane hidden space-y-6">
       <div class="flex items-center justify-between">
         <div>
-          <h1 class="text-xl font-bold text-white">Processed Media & Track 2 Digests</h1>
-          <p class="text-xs text-slate-400">Structured chapter breakdowns, key takeaways, and hyperlinked timestamp digests</p>
+          <h1 class="text-xl font-bold text-white">Overview</h1>
+          <p class="text-xs text-slate-400">Whole-video briefing, then section summaries — read this before reviewing claims</p>
         </div>
-        <button onclick="loadDigests()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-2">
+        <button onclick="loadOverviews()" class="px-3 py-1.5 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center gap-2">
           <i class="fa-solid fa-arrows-rotate"></i> Refresh
         </button>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Digest List -->
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col h-[700px]">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div class="lg:col-span-4 bg-slate-900 border border-slate-800 rounded-2xl p-4 lg:sticky lg:top-20">
           <h2 class="text-sm font-semibold text-slate-300 mb-3 px-1 flex items-center gap-2">
-            <i class="fa-solid fa-folder-open text-indigo-400"></i> Digest Archives
+            <i class="fa-solid fa-clapperboard text-indigo-400"></i> Videos
           </h2>
-          <div id="digests-list" class="flex-1 overflow-y-auto custom-scroll space-y-2 pr-1">
-            <!-- Rendered via JS -->
+          <div id="overviews-list" class="max-h-[70vh] overflow-y-auto custom-scroll space-y-2 pr-1">
           </div>
         </div>
 
-        <!-- Digest Preview & Reader -->
-        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-6 flex flex-col h-[700px] overflow-hidden">
-          <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
-            <div id="digest-viewer-header">
-              <h2 class="font-bold text-white text-base">Select a digest to read</h2>
-              <span class="text-xs text-slate-500">Track 2 Domain Knowledge Record</span>
-            </div>
-            <a id="digest-external-link" href="#" target="_blank" class="hidden text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5 px-3 py-1 bg-indigo-500/10 rounded-lg border border-indigo-500/20">
-              <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Source Media
-            </a>
-          </div>
-          <div id="digest-markdown-body" class="flex-1 overflow-y-auto custom-scroll prose prose-invert prose-indigo max-w-none text-slate-300 text-sm leading-relaxed pr-2">
-            <div class="text-center py-20 text-slate-500">
-              <i class="fa-regular fa-file-lines text-4xl mb-3 block opacity-40"></i>
-              Choose a processed multimedia digest from the left panel to inspect the timestamp-anchored synthesis.
-            </div>
+        <div id="overview-article" class="lg:col-span-8 space-y-5">
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-500">
+            <i class="fa-regular fa-file-lines text-4xl mb-3 block opacity-40"></i>
+            Select a video to read the client overview.
           </div>
         </div>
       </div>
@@ -415,31 +405,26 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- TAB 4: HUMAN REVIEW PORTAL (THE HITL GATE) -->
+    <!-- TAB 4: REVIEW QUEUE                        -->
     <!-- ========================================== -->
-    <div id="tab-review" class="tab-pane space-y-6">
-      <!-- Portal Highlight Banner -->
+    <div id="tab-review" class="tab-pane hidden space-y-6">
       <div class="bg-gradient-to-r from-amber-950/40 via-slate-900 to-indigo-950/40 border border-amber-500/30 rounded-2xl p-6">
-        <div class="flex items-start justify-between">
+        <div class="flex items-start justify-between gap-4">
           <div class="max-w-3xl">
             <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-semibold mb-3">
-              <i class="fa-solid fa-shield-halved"></i> AgentLoom Core Governance Invariant
+              <i class="fa-solid fa-list-check"></i> Evidence only
             </div>
-            <h1 class="text-2xl font-bold text-white mb-2">Human-in-the-Loop Review Portal</h1>
+            <h1 class="text-2xl font-bold text-white mb-2">Review Queue</h1>
             <p class="text-slate-300 text-sm leading-relaxed">
-              In the AgentLoom paradigm, autonomous extraction does not equal authoritative memory. All candidate knowledge graph nodes, distilled procedural skills, and behavior rules are queued as <strong>Proposals</strong>. Human experts must audit provenance and sign off before promotion into canonical memory.
+              Accept and reject happen only on the evidence workbench. Read the overview first, then audit claims against the video.
             </p>
           </div>
-          <button onclick="loadProposals()" class="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl border border-amber-500/40 text-xs font-semibold flex items-center gap-2">
-            <i class="fa-solid fa-arrows-rotate"></i> Refresh Queue
+          <button onclick="loadReviewQueue()" class="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-xl border border-amber-500/40 text-xs font-semibold flex items-center gap-2">
+            <i class="fa-solid fa-arrows-rotate"></i> Refresh
           </button>
         </div>
       </div>
-
-      <!-- Proposals List & Action View -->
-      <div class="space-y-4" id="proposals-container">
-        <!-- Rendered via JS -->
-      </div>
+      <div class="space-y-3" id="review-queue"></div>
     </div>
 
   </main>
@@ -453,9 +438,16 @@
   <script>
     let currentRole = 'domain';
     let currentTrack = 'knowledge';
-    let loadedProposals = [];
+    let overviewCards = [];
+    let currentOverviewFile = null;
+    let rawDigestLoaded = null;
+    let overviewPlayer = null;
+    let overviewYtReady = false;
+    let overviewPendingSeek = null;
+    let overviewVideoId = null;
     let activeEventSource = null;
     let currentJobId = null;
+    let currentJobProposal = '';
 
     // Switch Tabs
     function switchTab(tabId) {
@@ -476,9 +468,9 @@
 
       if (tabId === 'ingest') loadJobsHistory();
       if (tabId === 'profile') loadProfile();
-      if (tabId === 'data') loadDigests();
+      if (tabId === 'data') loadOverviews();
       if (tabId === 'kg') loadKg();
-      if (tabId === 'review') loadProposals();
+      if (tabId === 'review') loadReviewQueue();
     }
 
     // Show Toast
@@ -550,67 +542,291 @@
           </div>
         `).join('');
 
-        // Update badge
-        document.getElementById('pending-badge').textContent = m.pending_proposals;
+        refreshReviewBadge();
 
       } catch (err) {
         console.error('Failed to load profile:', err);
       }
     }
 
-    // 2. Data & Digests
-    async function loadDigests() {
+    function proposalName(value) {
+      if (!value) return '';
+      let name = String(value).split(/[/\\]/).pop();
+      for (let i = 0; i < 3; i++) {
+        try {
+          const next = decodeURIComponent(name);
+          if (next === name) break;
+          name = next.split(/[/\\]/).pop();
+        } catch (err) {
+          break;
+        }
+      }
+      return name;
+    }
+
+    function overviewFileFromHash() {
+      const hash = (location.hash || '').replace(/^#/, '');
+      if (hash.startsWith('overview/')) return proposalName(hash.slice('overview/'.length));
+      return null;
+    }
+
+    function proposalBasename(path) {
+      return proposalName(path);
+    }
+
+    function reviewHref(proposalFile) {
+      return `/review/${encodeURIComponent(proposalName(proposalFile))}`;
+    }
+
+    function openOverviewTab(proposalFile) {
+      const name = proposalName(proposalFile);
+      if (name) location.hash = 'overview/' + encodeURIComponent(name);
+      switchTab('data');
+    }
+
+    function setPendingBadge(cards) {
+      overviewCards = cards;
+      const pendingVideos = cards.filter(c => (c.review && c.review.pending > 0) || (c.review && c.review.legacy)).length;
+      document.getElementById('pending-badge').textContent = pendingVideos;
+    }
+
+    async function refreshReviewBadge() {
       try {
-        const res = await fetch('/api/data/digests');
-        const digests = await res.json();
-        const listEl = document.getElementById('digests-list');
-
-        if (digests.length === 0) {
-          listEl.innerHTML = `<div class="text-xs text-slate-500 p-4 text-center">No digests processed yet.</div>`;
-          return;
-        }
-
-        listEl.innerHTML = digests.map((d, idx) => `
-          <div onclick="readDigest('${d.filename}', '${encodeURIComponent(d.title)}', '${encodeURIComponent(d.source_url)}')" class="p-3 bg-slate-950/60 hover:bg-slate-800/70 border border-slate-800 rounded-xl cursor-pointer transition">
-            <h4 class="text-xs font-semibold text-white line-clamp-2 mb-1.5">${d.title}</h4>
-            <div class="flex items-center justify-between text-[10px] text-slate-400">
-              <span><i class="fa-regular fa-clock mr-1"></i>${d.modified_at}</span>
-              <span class="font-mono bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">${d.size_kb} KB</span>
-            </div>
-          </div>
-        `).join('');
-
-        if (digests.length > 0) {
-          readDigest(digests[0].filename, encodeURIComponent(digests[0].title), encodeURIComponent(digests[0].source_url));
-        }
+        const res = await fetch('/api/overviews');
+        setPendingBadge(await res.json());
       } catch (err) {
         console.error(err);
       }
     }
 
-    async function readDigest(filename, title, sourceUrl) {
+    async function loadOverviews() {
       try {
-        const res = await fetch(`/api/data/digest/${filename}`);
-        const data = await res.json();
-        
-        document.getElementById('digest-viewer-header').innerHTML = `
-          <h2 class="font-bold text-white text-base">${decodeURIComponent(title)}</h2>
-          <span class="text-xs text-slate-400">${filename}</span>
-        `;
-
-        const extBtn = document.getElementById('digest-external-link');
-        const url = decodeURIComponent(sourceUrl);
-        if (url && url !== "undefined") {
-          extBtn.href = url;
-          extBtn.classList.remove('hidden');
-        } else {
-          extBtn.classList.add('hidden');
+        const res = await fetch('/api/overviews');
+        overviewCards = await res.json();
+        setPendingBadge(overviewCards);
+        const listEl = document.getElementById('overviews-list');
+        if (!overviewCards.length) {
+          listEl.innerHTML = `<div class="text-xs text-slate-500 p-4 text-center">No videos ingested yet.</div>`;
+          return;
         }
-
-        document.getElementById('digest-markdown-body').innerHTML = marked.parse(data.content);
+        const preferred = proposalName(overviewFileFromHash() || currentOverviewFile || overviewCards[0].proposal_file);
+        listEl.innerHTML = overviewCards.map(card => {
+          const selected = card.proposal_file === preferred;
+          return `
+            <button type="button" data-proposal="${escapeHtml(card.proposal_file)}" onclick="openOverview(this.dataset.proposal, true)"
+              class="w-full text-left p-3 rounded-xl border transition ${selected ? 'bg-indigo-950/40 border-indigo-500/40' : 'bg-slate-950/60 hover:bg-slate-800/70 border-slate-800'}">
+              <h4 class="text-xs font-semibold text-white line-clamp-2 mb-1.5">${escapeHtml(card.title)}</h4>
+              <div class="flex items-center justify-between text-[10px] text-slate-400">
+                <span>${escapeHtml(card.channel || 'Unknown channel')}</span>
+                <span class="font-mono">${escapeHtml(card.duration_label || '—')}</span>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-1">${card.segment_count} sections${card.watch_count ? ` · ${card.watch_count} to watch` : ''}</div>
+            </button>`;
+        }).join('');
+        if (preferred) await openOverview(preferred, false);
       } catch (err) {
         console.error(err);
       }
+    }
+
+    async function openOverview(file, updateHash = true) {
+      const proposalFile = proposalName(file);
+      currentOverviewFile = proposalFile;
+      rawDigestLoaded = null;
+      if (updateHash) location.hash = 'overview/' + encodeURIComponent(proposalFile);
+      document.querySelectorAll('#overviews-list button').forEach(btn => {
+        const on = (btn.dataset.proposal || '') === proposalFile;
+        btn.className = `w-full text-left p-3 rounded-xl border transition ${on ? 'bg-indigo-950/40 border-indigo-500/40' : 'bg-slate-950/60 hover:bg-slate-800/70 border-slate-800'}`;
+      });
+      const article = document.getElementById('overview-article');
+      article.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-500">Loading overview…</div>`;
+      try {
+        const res = await fetch(`/api/overview/${encodeURIComponent(proposalFile)}`);
+        if (!res.ok) throw new Error(await res.text());
+        const data = await res.json();
+        article.innerHTML = renderOverview(data);
+        if (data.source && data.source.media_id) {
+          ensureOverviewYt();
+          mountOverviewPlayer(data.source.media_id);
+        }
+      } catch (err) {
+        console.error(err);
+        article.innerHTML = `<div class="bg-slate-900 border border-rose-500/30 rounded-2xl p-8 text-rose-300 text-sm">Could not load this overview.</div>`;
+      }
+    }
+
+    function speechModeBadge(seg) {
+      const mode = seg.speech_mode || (seg.watch ? 'walkthrough' : '');
+      if (!mode && !seg.watch) return '';
+      const map = {
+        lecture: ['口播', 'bg-slate-800 text-slate-300'],
+        walkthrough: ['建议看 · 演示', 'bg-amber-500/20 text-amber-200 border border-amber-500/40'],
+        reading_screen: ['建议看 · 读数', 'bg-amber-500/20 text-amber-200 border border-amber-500/40'],
+        promo: ['宣传', 'bg-purple-500/15 text-purple-200 border border-purple-500/30'],
+        mixed: ['建议看 · 含演示', 'bg-amber-500/20 text-amber-200 border border-amber-500/40'],
+      };
+      const [label, cls] = map[mode] || (seg.watch ? map.walkthrough : ['口播', 'bg-slate-800 text-slate-300']);
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${cls}">${label}</span>`;
+    }
+
+    function renderOverview(data) {
+      const src = data.source || {};
+      const doc = data.document || {};
+      const review = data.review || {};
+      const takeaways = (doc.takeaways || []).map(t => `<li class="leading-relaxed">${escapeHtml(t)}</li>`).join('');
+      const watchList = (data.segments || []).filter(s => s.watch);
+      const watchStrip = watchList.length ? `
+        <section class="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-4 space-y-2">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-amber-200">建议看 · Worth watching</h3>
+          <p class="text-[11px] text-amber-100/70">这些段在指屏幕或读数。文字概述代替不了画面。</p>
+          <div class="flex flex-col gap-2">
+            ${watchList.map(seg => `
+              <button type="button" onclick="overviewSeek(${seg.t0})" class="text-left text-sm text-amber-50 hover:text-white flex items-center justify-between gap-3">
+                <span>${escapeHtml(seg.title)}</span>
+                <span class="font-mono text-[11px] text-amber-200">${escapeHtml(seg.span_label || '')}</span>
+              </button>`).join('')}
+          </div>
+        </section>` : '';
+      const segments = (data.segments || []).map(seg => {
+        const points = (seg.key_points || []).map(kp => `
+          <li class="text-xs text-slate-400 leading-relaxed">
+            ${kp.t0 != null ? `<button type="button" onclick="overviewSeek(${kp.t0})" class="font-mono text-indigo-400 hover:underline mr-1.5">${escapeHtml(kp.label || '')}</button>` : ''}
+            ${escapeHtml(kp.point)}
+          </li>`).join('');
+        const chips = (seg.watch_spans || []).map(sp => `
+          <button type="button" onclick="overviewSeek(${sp.t0})" class="px-2 py-1 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-100 hover:bg-amber-500/20">
+            ${escapeHtml(sp.label)}${sp.reason ? ' · ' + escapeHtml(sp.reason) : ''}
+          </button>`).join('');
+        return `
+          <article class="bg-slate-950/50 border ${seg.watch ? 'border-amber-500/30' : 'border-slate-800'} rounded-xl p-4 space-y-2">
+            <div class="flex items-start justify-between gap-3">
+              <div class="space-y-1.5">
+                <div class="flex flex-wrap items-center gap-2">${speechModeBadge(seg)}<h3 class="text-sm font-semibold text-white">${escapeHtml(seg.title)}</h3></div>
+                ${seg.watch_reason ? `<p class="text-[11px] text-slate-400">${escapeHtml(seg.watch_reason)}</p>` : ''}
+              </div>
+              ${seg.t0 != null ? `<button type="button" onclick="overviewSeek(${seg.t0})" class="shrink-0 text-[11px] font-mono text-indigo-300 hover:text-white">${escapeHtml(seg.span_label || '')}</button>` : ''}
+            </div>
+            ${seg.analysis ? `<p class="text-sm text-slate-300 leading-relaxed">${escapeHtml(seg.analysis)}</p>` : '<p class="text-xs text-slate-500">No section summary.</p>'}
+            ${chips ? `<div class="flex flex-wrap gap-2">${chips}</div>` : ''}
+            ${seg.url ? `<a href="${escapeHtml(seg.url)}" target="_blank" class="text-[11px] text-slate-500 hover:text-indigo-300">Open this moment on YouTube</a>` : ''}
+            ${points ? `<details class="pt-1"><summary class="text-[11px] text-slate-500 cursor-pointer">Key points for evidence review (${seg.key_points.length})</summary><ul class="mt-2 space-y-1.5 list-disc pl-4">${points}</ul></details>` : ''}
+          </article>`;
+      }).join('');
+
+      return `
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+          <div id="overview-player-host" class="${src.media_id ? 'aspect-video bg-black' : 'hidden'}"></div>
+          <div class="p-5 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+              <div>
+                <h2 class="text-lg font-bold text-white">${escapeHtml(src.title || data.proposal_file)}</h2>
+                <p class="text-xs text-slate-400 mt-1">${[src.channel, src.duration_label].filter(Boolean).map(escapeHtml).join(' · ')}</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                ${src.url ? `<a href="${escapeHtml(src.url)}" target="_blank" class="px-3 py-2 text-xs rounded-xl border border-slate-700 text-slate-200 hover:bg-slate-800">Open source</a>` : ''}
+                <a href="${reviewHref(data.proposal_file)}" class="px-3 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white">Review this video</a>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500">${review.legacy ? 'No typed claims yet — evidence review will use the older digest chapters.' : `${review.pending || 0} of ${review.total || 0} claims still open`}</p>
+          </div>
+        </div>
+
+        ${watchStrip}
+        ${data.has_structured_overview ? `
+          <section class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300">整片概述 · What the video said</h3>
+            ${doc.executive_summary ? `<p class="text-sm text-slate-200 leading-relaxed">${escapeHtml(doc.executive_summary)}</p>` : ''}
+            ${doc.thesis ? `<p class="text-sm text-slate-300 leading-relaxed"><span class="text-slate-500">Thesis. </span>${escapeHtml(doc.thesis)}</p>` : ''}
+            ${doc.structure ? `<p class="text-sm text-slate-400 leading-relaxed"><span class="text-slate-500">Structure. </span>${escapeHtml(doc.structure)}</p>` : ''}
+            ${takeaways ? `<ul class="list-disc pl-5 text-sm text-slate-300 space-y-1.5">${takeaways}</ul>` : ''}
+          </section>
+          <section class="space-y-3">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-indigo-300 px-1">分段概述 · By section</h3>
+            ${segments || '<p class="text-xs text-slate-500">No segments.</p>'}
+          </section>
+        ` : `
+          <section class="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 text-sm text-amber-200">
+            This video was ingested before typed distillation, so there is no whole-video / section briefing. Re-ingest the URL to generate one.
+          </section>
+        `}
+
+        <details class="bg-slate-900 border border-slate-800 rounded-2xl p-4" ${data.digest_filename ? `ontoggle="if(this.open) loadRawDigest('${encodeURIComponent(data.digest_filename)}')"` : ''}>
+          <summary class="text-xs text-slate-400 cursor-pointer">Operator / raw digest</summary>
+          <div id="raw-digest-body" class="mt-3 prose prose-invert prose-indigo max-w-none text-slate-400 text-sm">${data.digest_filename ? 'Open this section to load the full operator dump.' : 'No digest file on disk.'}</div>
+        </details>
+      `;
+    }
+
+    async function loadRawDigest(encodedName) {
+      const filename = decodeURIComponent(encodedName);
+      if (rawDigestLoaded === filename) return;
+      const body = document.getElementById('raw-digest-body');
+      if (!body) return;
+      try {
+        const res = await fetch(`/api/data/digest/${encodeURIComponent(filename)}`);
+        if (!res.ok) throw new Error('missing');
+        const data = await res.json();
+        body.innerHTML = marked.parse(data.content || '');
+        rawDigestLoaded = filename;
+      } catch (err) {
+        body.textContent = 'Could not load the raw digest.';
+      }
+    }
+
+    function ensureOverviewYt() {
+      if (window.YT && window.YT.Player) {
+        overviewYtReady = true;
+        return;
+      }
+      if (document.getElementById('yt-iframe-api')) return;
+      const previous = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function() {
+        overviewYtReady = true;
+        if (typeof previous === 'function') previous();
+        if (overviewVideoId) mountOverviewPlayer(overviewVideoId);
+      };
+      const script = document.createElement('script');
+      script.id = 'yt-iframe-api';
+      script.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(script);
+    }
+
+    function mountOverviewPlayer(videoId) {
+      overviewVideoId = videoId;
+      const host = document.getElementById('overview-player-host');
+      if (!host) return;
+      if (!overviewYtReady) {
+        ensureOverviewYt();
+        return;
+      }
+      if (overviewPlayer && overviewPlayer.destroy) {
+        try { overviewPlayer.destroy(); } catch (err) {}
+        overviewPlayer = null;
+      }
+      host.innerHTML = '<div id="overview-player-mount"></div>';
+      overviewPlayer = new YT.Player('overview-player-mount', {
+        videoId,
+        width: '100%',
+        height: '100%',
+        playerVars: { enablejsapi: 1, origin: location.origin, rel: 0, modestbranding: 1 },
+        events: {
+          onReady() {
+            if (overviewPendingSeek !== null) {
+              overviewSeek(overviewPendingSeek);
+              overviewPendingSeek = null;
+            }
+          }
+        }
+      });
+    }
+
+    function overviewSeek(seconds) {
+      if (!overviewPlayer || !overviewPlayer.seekTo) {
+        overviewPendingSeek = seconds;
+        return;
+      }
+      overviewPlayer.seekTo(Number(seconds), true);
+      if (overviewPlayer.playVideo) overviewPlayer.playVideo();
     }
 
     // 3. Knowledge Graph
@@ -721,169 +937,39 @@
       `;
     }
 
-    // 4. Human Review Portal
-    async function loadProposals() {
+    async function loadReviewQueue() {
       try {
-        const res = await fetch('/api/proposals');
-        loadedProposals = await res.json();
-        const container = document.getElementById('proposals-container');
-
-        // Update badge
-        const pendingCount = loadedProposals.filter(p => p.status === 'pending' || p.status === 'pending_human_review' || !p.status).length;
-        document.getElementById('pending-badge').textContent = pendingCount;
-
-        if (loadedProposals.length === 0) {
+        const res = await fetch('/api/overviews');
+        overviewCards = await res.json();
+        setPendingBadge(overviewCards);
+        const container = document.getElementById('review-queue');
+        if (!overviewCards.length) {
           container.innerHTML = `<div class="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center text-slate-500">
-            <i class="fa-solid fa-check-double text-4xl mb-3 block text-emerald-400 opacity-60"></i>
-            All candidate extractions have been reviewed and resolved!
+            Ingest a video first. The queue lists videos that still need evidence review.
           </div>`;
           return;
         }
-
-        container.innerHTML = loadedProposals.map((p, idx) => {
-          const meta = p.source || p.metadata || {};
-          const dist = p.distilled || {};
-          const candNodes = p.candidate_kg_nodes || dist.candidate_kg_nodes || [];
-          const candSkills = p.candidate_skills || dist.candidate_skills || [];
-          const chapters = p.chapter_summaries || dist.chapter_summaries || [];
-          const isPending = (p.status === 'pending' || p.status === 'pending_human_review' || !p.status);
-
+        container.innerHTML = overviewCards.map(card => {
+          const pending = card.review ? card.review.pending : 0;
+          const total = card.review ? card.review.total : 0;
+          const open = pending > 0 || (card.review && card.review.legacy);
           return `
-            <div class="bg-slate-900 border ${isPending ? 'border-amber-500/40 shadow-lg shadow-amber-500/5' : 'border-slate-800 opacity-80'} rounded-2xl p-6 space-y-5">
-              
-              <!-- Proposal Header -->
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-                <div>
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="px-2 py-0.5 text-xs font-bold rounded ${isPending ? 'bg-amber-400/10 text-amber-300 border border-amber-400/30' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'} uppercase">
-                      ${isPending ? 'Pending Human Review' : (p.status || 'Resolved')}
-                    </span>
-                    <span class="text-xs text-slate-400 font-mono">${p.proposal_id || ''}</span>
-                  </div>
-                  <h3 class="text-lg font-bold text-white">${meta.title || 'Multimedia Extraction Proposal'}</h3>
-                  ${meta.url ? `
-                    <a href="${meta.url}" target="_blank" class="text-xs text-indigo-400 hover:underline flex items-center gap-1 mt-1">
-                      <i class="fa-brands fa-youtube"></i> ${meta.url}
-                    </a>
-                  ` : ''}
-                </div>
-
-                <!-- Review Action Buttons -->
-                ${isPending ? `
-                  <div class="flex items-center gap-2">
-                    <a href="/review/${encodeURIComponent(p._file_name)}" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-indigo-600/20 flex items-center gap-2 transition">
-                      <i class="fa-solid fa-magnifying-glass-chart"></i> Review Evidence
-                    </a>
-                    <button onclick="submitReview('${p._file_name}', 'approve')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition">
-                      <i class="fa-solid fa-check"></i> Approve & Canonize
-                    </button>
-                    <button onclick="submitReview('${p._file_name}', 'reject')" class="px-3 py-2 bg-slate-800 hover:bg-rose-900/40 text-rose-300 border border-slate-700 hover:border-rose-500/40 rounded-xl text-xs font-semibold transition">
-                      <i class="fa-solid fa-xmark"></i> Reject
-                    </button>
-                  </div>
-                ` : `
-                  <div class="text-right text-xs">
-                    <span class="text-emerald-400 font-semibold flex items-center gap-1 justify-end"><i class="fa-solid fa-circle-check"></i> Resolved</span>
-                    <span class="text-slate-500 text-[10px]">Promoted to Canonical Track</span>
-                  </div>
-                `}
+            <div class="bg-slate-900 border ${open ? 'border-amber-500/40' : 'border-slate-800'} rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h3 class="text-base font-bold text-white">${escapeHtml(card.title)}</h3>
+                <p class="text-xs text-slate-400 mt-1">${escapeHtml(card.channel || '')}${card.duration_label ? ' · ' + escapeHtml(card.duration_label) : ''}</p>
+                <p class="text-xs mt-2 ${open ? 'text-amber-300' : 'text-emerald-400'}">
+                  ${card.review && card.review.legacy ? 'Legacy proposal — open the workbench to review chapters' : `${pending} of ${total} claims still open`}
+                </p>
               </div>
-
-              <!-- Distilled Highlights Grid -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Candidate KG Nodes -->
-                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
-                  <h4 class="text-xs font-bold text-amber-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
-                    <i class="fa-solid fa-circle-nodes"></i> Candidate KG Nodes (${candNodes.length})
-                  </h4>
-                  <div class="space-y-3">
-                    ${candNodes.map(cn => `
-                      <div class="border-l-2 border-indigo-500 pl-3 py-1">
-                        <div class="flex items-center justify-between">
-                          <span class="text-xs font-semibold text-white">${cn.title || cn.name || cn.id}</span>
-                          <span class="text-[10px] text-slate-500 font-mono">${cn.type}</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">${cn.description || ''}</p>
-                        ${cn.timestamp_anchor ? `
-                          <a href="${cn.timestamp_anchor}" target="_blank" class="text-[11px] text-indigo-400 hover:underline mt-1.5 inline-flex items-center gap-1">
-                            <i class="fa-regular fa-clock"></i> Jump to Evidence Timestamp
-                          </a>
-                        ` : ''}
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
-
-                <!-- Candidate Executable Skills -->
-                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-4">
-                  <h4 class="text-xs font-bold text-purple-400 mb-3 flex items-center gap-1.5 uppercase tracking-wider">
-                    <i class="fa-solid fa-wrench"></i> Candidate Executable Skills (${candSkills.length})
-                  </h4>
-                  <div class="space-y-3">
-                    ${candSkills.length === 0 ? `<div class="text-xs text-slate-500 py-4">No candidate skills in this proposal.</div>` : candSkills.map(cs => `
-                      <div class="border-l-2 border-purple-500 pl-3 py-1">
-                        <div class="flex items-center justify-between">
-                          <span class="text-xs font-semibold text-white">${cs.name || cs.title}</span>
-                          <span class="text-[10px] text-slate-500">${cs.category || 'Skill'}</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">${cs.purpose || ''}</p>
-                        <div class="mt-2 text-[10px] text-slate-500">
-                          Preconditions: ${(cs.preconditions || []).join(', ') || 'None'}
-                        </div>
-                      </div>
-                    `).join('')}
-                  </div>
-                </div>
+              <div class="flex flex-wrap gap-2">
+                <button type="button" data-proposal="${escapeHtml(card.proposal_file)}" onclick="openOverviewTab(this.dataset.proposal)" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-100 rounded-xl text-xs font-semibold">Overview</button>
+                <a href="${reviewHref(card.proposal_file)}" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold">Review evidence</a>
               </div>
-
-              <!-- Chapter Alignment & Proof of Provenance -->
-              <div class="bg-slate-950/40 border border-slate-800/80 rounded-xl p-4">
-                <h4 class="text-xs font-bold text-slate-300 mb-2 flex items-center gap-1.5">
-                  <i class="fa-solid fa-list-check text-indigo-400"></i> Temporal Scaffolding & Chapters Audited (${chapters.length})
-                </h4>
-                <div class="flex flex-wrap gap-2 mt-2">
-                  ${chapters.length === 0 ? `<div class="text-xs text-slate-500">Video transcript analyzed directly.</div>` : chapters.map(ch => `
-                    <a href="${ch.timestamp_anchor}" target="_blank" class="text-xs px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg flex items-center gap-1.5 transition">
-                      <i class="fa-regular fa-circle-play text-indigo-400 text-[10px]"></i>
-                      <span>${ch.chapter_title}</span>
-                    </a>
-                  `).join('')}
-                </div>
-              </div>
-
-            </div>
-          `;
+            </div>`;
         }).join('');
-
       } catch (err) {
         console.error(err);
-      }
-    }
-
-    // Submit Review Action
-    async function submitReview(proposalFileName, action) {
-      if (!confirm(`Are you sure you want to ${action.toUpperCase()} this proposal?`)) return;
-
-      try {
-        const res = await fetch(`/api/proposals/${proposalFileName}/review`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: action,
-            reviewer: "Keven (Human Operator)",
-            notes: `Reviewed and ${action}ed via MediaLoom HITL Portal`
-          })
-        });
-        const result = await res.json();
-        if (result.ok) {
-          showToast(`Proposal successfully ${action}ed! Promoted knowledge merged into canonical memory.`);
-          loadProposals();
-        } else {
-          showToast('Failed to process review', true);
-        }
-      } catch (err) {
-        console.error(err);
-        showToast('Error communicating with portal server', true);
       }
     }
 
@@ -1040,17 +1126,39 @@
       });
     }
 
-    function markJobCompleted() {
+    function wireCompletedActions(proposalFile) {
+      currentJobProposal = proposalFile || '';
+      const box = document.getElementById('job-completed-action');
+      const overviewBtn = document.getElementById('job-overview-btn');
+      const reviewLink = document.getElementById('job-review-link');
+      if (!currentJobProposal) {
+        box.classList.add('hidden');
+        return;
+      }
+      box.classList.remove('hidden');
+      overviewBtn.onclick = () => openOverviewTab(currentJobProposal);
+      reviewLink.href = reviewHref(currentJobProposal);
+    }
+
+    async function markJobCompleted() {
       const badge = document.getElementById('job-status-badge');
       badge.innerHTML = '<i class="fa-solid fa-circle-check text-xs"></i> COMPLETED';
       badge.className = "px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5";
-      document.getElementById('job-completed-action').classList.remove('hidden');
       document.getElementById('job-progress-bar').style.width = "100%";
       document.getElementById('job-percent-label').textContent = "100%";
       document.getElementById('job-current-stage-label').textContent = "Ingestion Complete";
-      showToast("Ingestion completed! Proposal emitted to Human Review Portal.");
-      loadProposals();
+      if (currentJobId) {
+        try {
+          const res = await fetch(`/api/ingest/jobs/${currentJobId}`);
+          const data = await res.json();
+          wireCompletedActions(proposalBasename(data.artifacts && data.artifacts.agentloom_proposal));
+        } catch (err) {
+          console.error(err);
+        }
+      }
+      showToast("Ingestion completed. Read the overview, then review evidence.");
       loadJobsHistory();
+      refreshReviewBadge();
       if (activeEventSource) {
         activeEventSource.close();
         activeEventSource = null;
@@ -1078,7 +1186,7 @@
         const jobs = data.jobs || [];
 
         if (jobs.length === 0) {
-          container.innerHTML = '<div class="text-xs text-slate-500 py-6 text-center">No ingestion jobs run yet in this session. Submit a URL above to start!</div>';
+          container.innerHTML = '<div class="text-xs text-slate-500 py-6 text-center">No ingestion jobs yet. Submit a URL above to start.</div>';
           return;
         }
 
@@ -1107,13 +1215,21 @@
                     <span class="px-2 py-0.5 rounded text-[10px] font-semibold ${
                       j.status === 'completed' ? 'bg-emerald-500/20 text-emerald-300' :
                       j.status === 'running' ? 'bg-amber-500/20 text-amber-300 animate-pulse' :
-                      j.status === 'failed' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-800 text-slate-400'
+                      j.status === 'failed' ? 'bg-rose-500/20 text-rose-300' :
+                      j.status === 'interrupted' ? 'bg-amber-500/15 text-amber-200' : 'bg-slate-800 text-slate-400'
                     }">${j.status.toUpperCase()}</span>
                   </td>
                   <td class="py-3 px-3 text-[11px] text-slate-400">${j.created_at}</td>
-                  <td class="py-3 px-3 text-right">
+                  <td class="py-3 px-3 text-right space-x-2">
+                    ${(() => {
+                      const proposal = proposalBasename(j.artifacts && j.artifacts.agentloom_proposal);
+                      return proposal
+                        ? `<button type="button" data-proposal="${escapeHtml(proposal)}" onclick="openOverviewTab(this.dataset.proposal)" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-200 rounded text-[11px] font-medium transition">Overview</button>
+                           <a href="${reviewHref(proposal)}" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[11px] font-medium transition">Review</a>`
+                        : '';
+                    })()}
                     <button onclick="listenToJob('${j.job_id}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-indigo-300 rounded text-[11px] font-medium transition">
-                      Inspect & Stream
+                      Inspect
                     </button>
                   </td>
                 </tr>
@@ -1131,10 +1247,17 @@
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
-    // Initialize default tab
     document.addEventListener('DOMContentLoaded', () => {
-      switchTab('ingest');
-      loadProposals(); // update pending badge immediately
+      const file = overviewFileFromHash();
+      if ((location.hash || '') === '#queue') switchTab('review');
+      else if (file) switchTab('data');
+      else switchTab('ingest');
+      refreshReviewBadge();
+    });
+    window.addEventListener('hashchange', () => {
+      const file = overviewFileFromHash();
+      if ((location.hash || '') === '#queue') switchTab('review');
+      else if (file && currentOverviewFile !== file) switchTab('data');
     });
   </script>
 </body>

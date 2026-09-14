@@ -12,9 +12,46 @@ know, and quietly omitting it would misrepresent the proposal's coverage.
 from __future__ import annotations
 
 import hashlib
+import re
 from typing import Any, Dict, List, Optional
 
 from agentloom_media.distillation.anchors import parse_anchor_seconds
+
+_YT_ID = re.compile(
+    r"(?:youtube\.com/watch\?[^#]*v=|youtu\.be/|youtube\.com/embed/)([\w-]{11})"
+)
+_DIGEST_HEADING = re.compile(
+    r"^###\s+(.+?)\s+[—–-]\s+\[(\d{1,2}:\d{2}(?::\d{2})?)\]",
+    re.MULTILINE,
+)
+
+
+def media_id_from_source(source: Optional[Dict[str, Any]]) -> Optional[str]:
+    """Prefer an explicit media_id; fall back to the YouTube id in the URL.
+
+    Pre-P3 proposals stored title/url/channel but not media_id. The transcript cache is
+    keyed by that id, so without this fallback the review page embeds the video and then
+    pretends there is no transcript — even when one is sitting on disk.
+    """
+    source = source or {}
+    explicit = source.get("media_id") or source.get("id")
+    if explicit and not str(explicit).startswith("http"):
+        return str(explicit)
+    url = str(source.get("url") or "")
+    match = _YT_ID.search(url)
+    return match.group(1) if match else None
+
+
+def digest_path_for_proposal(repo_root, proposal_file: str):
+    """`proposal-YYYY-MM-DD-slug.json` ↔ `docs/digests/YYYY-MM-DD-slug.md`."""
+    from pathlib import Path
+
+    name = Path(proposal_file).name
+    if name.startswith("proposal-") and name.endswith(".json"):
+        stem = name[len("proposal-") : -len(".json")]
+        path = Path(repo_root) / "docs" / "digests" / f"{stem}.md"
+        return path if path.exists() else None
+    return None
 
 
 def _short_hash(text: str) -> str:
@@ -222,6 +259,50 @@ def build_review_items(proposal: Dict[str, Any]) -> List[Dict[str, Any]]:
                     "evidence": [],
                 }
             )
+
+    return items
+
+
+def build_legacy_review_items(
+    proposal: Dict[str, Any], digest_markdown: Optional[str] = None
+) -> List[Dict[str, Any]]:
+    """Targets for a pre-typed proposal: digest chapters (with times) plus old KG nodes.
+
+    Old `candidate_kg_nodes` have no spans. They are listed ungrounded so a reviewer can
+    still see what was extracted, but they cannot seek the recording from those cards.
+    """
+    items: List[Dict[str, Any]] = []
+
+    for match in _DIGEST_HEADING.finditer(digest_markdown or ""):
+        title = match.group(1).strip()
+        seconds = parse_anchor_seconds(match.group(2))
+        evidence = _evidence(seconds)
+        items.append(
+            {
+                "kind": "key_point",
+                "id": f"legacy-chapter:{_short_hash(title)}",
+                "label": title,
+                "context": "legacy digest chapter",
+                "evidence": [evidence] if evidence else [],
+            }
+        )
+
+    for node in proposal.get("candidate_kg_nodes") or []:
+        if not isinstance(node, dict):
+            continue
+        name = str(node.get("name") or node.get("id") or "").strip()
+        if not name:
+            continue
+        items.append(
+            {
+                "kind": "node",
+                "id": f"legacy-node:{node.get('id') or _short_hash(name)}",
+                "label": name,
+                "context": node.get("type") or "legacy",
+                "detail": node.get("description"),
+                "evidence": [],
+            }
+        )
 
     return items
 

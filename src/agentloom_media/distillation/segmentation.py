@@ -103,6 +103,10 @@ class Segment:
     title: Optional[str] = None
     key_points: List[str] = field(default_factory=list)
     analysis: Optional[str] = None
+    speech_mode: Optional[str] = None
+    watch: bool = False
+    watch_reason: Optional[str] = None
+    watch_spans: List[Dict[str, Any]] = field(default_factory=list)
     # Cosine distance at this segment's opening boundary; None for the first segment and for
     # boundaries that came from author chapters.
     boundary_distance: Optional[float] = None
@@ -122,6 +126,10 @@ class Segment:
             "utterance_ids": self.utterance_ids,
             "key_points": self.key_points,
             "analysis": self.analysis,
+            "speech_mode": self.speech_mode,
+            "watch": self.watch,
+            "watch_reason": self.watch_reason,
+            "watch_spans": self.watch_spans,
         }
 
 

@@ -41,6 +41,7 @@ env/
 # Canonical knowledge lives in agents/, docs/digests/, and proposals/ and stays tracked.
 data/transcripts/
 data/*.db
+data/jobs/
 *.mp4
 *.m4a
 *.mp3

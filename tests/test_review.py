@@ -11,7 +11,13 @@ from agentloom_media.review.decisions import (
     review_path,
     summarize,
 )
-from agentloom_media.review.targets import build_review_items, coverage
+from agentloom_media.review.targets import (
+    build_legacy_review_items,
+    build_review_items,
+    coverage,
+    digest_path_for_proposal,
+    media_id_from_source,
+)
 
 PROPOSAL = {
     "source": {"media_id": "vid", "title": "T", "url": "https://youtu.be/vid"},
@@ -140,6 +146,41 @@ def test_coverage_counts_grounding_honestly():
     assert report["grounded"] + report["ungrounded"] == report["total"]
     assert report["by_kind"]["takeaway"]["ungrounded"] == 1
     assert report["by_kind"]["term"]["grounded"] == 1
+
+
+def test_media_id_falls_back_to_the_youtube_url():
+    assert media_id_from_source({"url": "https://www.youtube.com/watch?v=VFjup6AbQOM"}) == "VFjup6AbQOM"
+    assert media_id_from_source({"url": "https://youtu.be/VFjup6AbQOM"}) == "VFjup6AbQOM"
+    assert media_id_from_source({"media_id": "EtU45PsaL1M", "url": "https://youtu.be/other"}) == "EtU45PsaL1M"
+    assert media_id_from_source({"url": "https://example.com/not-youtube"}) is None
+
+
+def test_digest_path_matches_proposal_filename(tmp_path):
+    digest = tmp_path / "docs" / "digests"
+    digest.mkdir(parents=True)
+    (digest / "2026-09-08-andromeda.md").write_text("x", encoding="utf-8")
+    found = digest_path_for_proposal(tmp_path, "proposal-2026-09-08-andromeda.json")
+    assert found == digest / "2026-09-08-andromeda.md"
+    assert digest_path_for_proposal(tmp_path, "proposal-missing.json") is None
+
+
+def test_legacy_digest_chapters_become_seekable_items():
+    items = build_legacy_review_items(
+        {"candidate_kg_nodes": [{"id": "cbo", "name": "CBO", "type": "term", "description": "x"}]},
+        "### 不要只关低效广告 — [02:29](https://youtu.be/x?t=149s)\n\nbody\n",
+    )
+    chapters = [i for i in items if i["kind"] == "key_point"]
+    nodes = [i for i in items if i["kind"] == "node"]
+    assert chapters[0]["evidence"][0]["t0"] == 149.0
+    assert nodes[0]["evidence"] == []
+    assert nodes[0]["label"] == "CBO"
+
+
+def test_typed_proposal_is_not_replaced_by_legacy_nodes():
+    """Legacy fallback is only for empty typed output; this must stay a no-op here."""
+    typed = build_review_items(PROPOSAL)
+    assert typed
+    assert all(not i["id"].startswith("legacy-") for i in typed)
 
 
 def test_empty_proposal_yields_no_targets():

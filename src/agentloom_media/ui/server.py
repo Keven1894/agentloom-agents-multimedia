@@ -2,9 +2,9 @@
 
 Provides REST endpoints for:
 1. Agent Profile & Capabilities Showcase
-2. Data & Digest Explorer (processed media, transcripts, digests)
+2. Client overview (whole-video + per-segment summaries)
 3. 3-Track Dual-Role Knowledge Graph Visualization
-4. Human Review Portal (HITL proposal inspection, approve/reject gates)
+4. Review queue + evidence workbench
 """
 
 from __future__ import annotations
@@ -23,11 +23,20 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from agentloom_media.ui.jobs import global_job_manager, IngestJob
+from agentloom_media.ui.overview import (
+    client_overview,
+    evidence_progress,
+    list_overview_cards,
+    resolve_proposal_filename,
+)
 from agentloom_media.distillation.distiller import resolve_distillation_model
 from agentloom_media.review import (
+    build_legacy_review_items,
     build_review_items,
     coverage,
     current_decisions,
+    digest_path_for_proposal,
+    media_id_from_source,
     read_review,
     record_decision,
     summarize,
@@ -49,6 +58,7 @@ SKILLS_DIR = AGENTS_DIR / "skills"
 PROPOSALS_DIR = WORKSPACE_ROOT / "proposals"
 CACHE_DIR = WORKSPACE_ROOT / ".cache"
 STATIC_DIR = Path(__file__).resolve().parent / "static"
+global_job_manager.attach(WORKSPACE_ROOT)
 
 app = FastAPI(
     title="MediaLoom Agent Portal",
@@ -203,6 +213,35 @@ def get_digest_content(filename: str) -> Dict[str, Any]:
     }
 
 
+def _proposal_path(proposal_file: str) -> Path:
+    name = resolve_proposal_filename(proposal_file)
+    path = PROPOSALS_DIR / name
+    try:
+        exists = path.exists() and path.is_file()
+    except OSError:
+        exists = False
+    if not exists:
+        raise HTTPException(status_code=404, detail="Proposal file not found")
+    return path
+
+
+@app.get("/api/overviews")
+def list_overviews() -> List[Dict[str, Any]]:
+    """Slim cards for the Overview list and the review queue."""
+    return list_overview_cards(WORKSPACE_ROOT)
+
+
+@app.get("/api/overview/{proposal_file}")
+def get_overview(proposal_file: str) -> Dict[str, Any]:
+    path = _proposal_path(proposal_file)
+    with open(path, "r", encoding="utf-8") as handle:
+        proposal = json.load(handle)
+    briefing = client_overview(proposal, path.name, repo_root=WORKSPACE_ROOT)
+    review = read_review(WORKSPACE_ROOT, path.name)
+    briefing["review"] = evidence_progress(proposal, review)
+    return briefing
+
+
 # ==========================================
 # 3. Pillar 3: Interactive Knowledge Graphs
 # ==========================================
@@ -263,13 +302,6 @@ class DecisionPayload(BaseModel):
     reviewer: str = "unknown"
 
 
-def _proposal_path(proposal_file: str) -> Path:
-    path = PROPOSALS_DIR / Path(proposal_file).name
-    if not path.exists():
-        raise HTTPException(status_code=404, detail="Proposal file not found")
-    return path
-
-
 @app.get("/review/{proposal_file}")
 def review_page(proposal_file: str) -> FileResponse:
     _proposal_path(proposal_file)
@@ -282,11 +314,10 @@ def get_review_bundle(proposal_file: str) -> Dict[str, Any]:
     with open(_proposal_path(proposal_file), "r", encoding="utf-8") as f:
         proposal = json.load(f)
 
-    items = build_review_items(proposal)
     review = read_review(WORKSPACE_ROOT, proposal_file)
 
     source = proposal.get("source") or {}
-    media_id = source.get("media_id") or source.get("id")
+    media_id = media_id_from_source(source)
 
     # The transcript panel needs utterances and, crucially, the timing granularity: word-level
     # highlighting is a lie unless the ASR actually produced word timings.
@@ -304,9 +335,23 @@ def get_review_bundle(proposal_file: str) -> Dict[str, Any]:
                 ],
             }
 
+    items = build_review_items(proposal)
+    legacy = False
+    if not items:
+        digest_path = digest_path_for_proposal(WORKSPACE_ROOT, proposal_file)
+        markdown = (
+            digest_path.read_text(encoding="utf-8") if digest_path is not None else None
+        )
+        items = build_legacy_review_items(proposal, markdown)
+        legacy = True
+
+    if media_id and not source.get("media_id"):
+        source = {**source, "media_id": media_id}
+
     return {
         "proposal_file": Path(proposal_file).name,
         "source": source,
+        "legacy": legacy,
         "segmentation": proposal.get("segmentation"),
         "passes": proposal.get("passes"),
         "transcript_provenance": proposal.get("transcript_provenance"),
@@ -479,7 +524,7 @@ async def submit_ingest_job(payload: SubmitIngestPayload) -> Dict[str, Any]:
     if not url:
         raise HTTPException(status_code=400, detail="URL cannot be empty")
 
-    global_job_manager.workspace_root = WORKSPACE_ROOT
+    global_job_manager.attach(WORKSPACE_ROOT)
     job = global_job_manager.create_job(
         url=url,
         model=payload.model or resolve_distillation_model(),

@@ -14,6 +14,10 @@ from typing import Any, Callable, Dict, List, Optional
 
 from agentloom_media.distillation import passes as typed_passes
 from agentloom_media.distillation.segmentation import Segment, segment_transcript
+from agentloom_media.distillation.speech_mode import (
+    apply_speech_mode,
+    classify_speech_modes,
+)
 from agentloom_media.distillation.terms import extract_grounded_terms
 from agentloom_media.kg.extract import extract_graph
 from agentloom_media.kg.merge import suggest_merges
@@ -131,6 +135,23 @@ def distill(
         f"Segment summaries: {summarized}/{len(result.segments)} succeeded"
         + (f"; first failure: {failures[0]}" if failures else "")
     )
+
+    # Pass 2b: speech mode. Separate from summaries so a claim rewrite cannot hide a demo.
+    try:
+        modes = classify_speech_modes(result.segments, utterances, model=model)
+        watched = 0
+        for segment in result.segments:
+            info = modes.get(segment.index)
+            if not info:
+                continue
+            apply_speech_mode(segment, info)
+            if segment.watch:
+                watched += 1
+        result.passes["speech_mode"] = "ok"
+        say(f"Speech mode: {watched}/{len(result.segments)} sections marked watch.")
+    except Exception as exc:
+        result.passes["speech_mode"] = f"failed: {exc}"
+        say(f"Speech mode failed: {exc}")
 
     # Pass 3: document synthesis, on the stronger tier.
     try:

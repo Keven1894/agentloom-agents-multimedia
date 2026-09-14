@@ -47,7 +47,8 @@
     "terms": "ok",
     "kg": "ok",
     "takeaway": "ok",
-    "skill": "ok"
+    "skill": "ok",
+    "speech_mode": "ok"
   },
   "document": {
     "executive_summary": "该视频主张，Meta Andromeda改革后，绝大多数广告账户不应再依赖按漏斗、受众、兴趣或再营销层层拆分的复杂Campaign结构，而应以更少、更整合的CBO Campaign和Ad Set承载更多元的创意，让Meta AI在同一稳定环境中识别不同广告分别承担拉新、建立信任与促成转化的作用。讲者认为，无论账户规模从小到大、即使累计转化价值达到数千万美元，复杂结构都未必带来更好效果，反而可能分散信号、拖长学习期并妨碍算法优化；广告主真正应投入的重点是提供多样化创意、根据业务目标选择优化指标，并通过清晰结构持续测试和评估素材。同时，视频将AI文案、设计、销售页和客服等自动化能力视为提升创意转化与整体营销效率的补充。",
@@ -183,7 +184,18 @@
           "anchor": "03:10"
         }
       ],
-      "analysis": "本段的核心转变是：广告优化重点从复杂的受众与Campaign结构，转向为Meta AI提供足够多样化且有效的创意素材。"
+      "analysis": "本段的核心转变是：广告优化重点从复杂的受众与Campaign结构，转向为Meta AI提供足够多样化且有效的创意素材。",
+      "speech_mode": "mixed",
+      "watch": true,
+      "watch_reason": "前段通过Meta广告账户界面展示不同账户的Campaign、Ad Set和Ad结构，后段转为讲解Campaign Structure与Creative Strategy。",
+      "watch_spans": [
+        {
+          "t0": 0.0,
+          "t1": 64.0,
+          "label": "00:00–01:04",
+          "reason": "展示多个真实广告账户的花费、Purchase Conversion Value及账户规模，用于比较不同账户的结构。"
+        }
+      ]
     },
     {
       "index": 1,
@@ -257,7 +269,11 @@
           "anchor": "05:17"
         }
       ],
-      "analysis": "这段内容将Campaign Structure定义为连接广告测试、算法学习与后续决策的核心机制，而不只是账户整理方式。"
+      "analysis": "这段内容将Campaign Structure定义为连接广告测试、算法学习与后续决策的核心机制，而不只是账户整理方式。",
+      "speech_mode": "lecture",
+      "watch": false,
+      "watch_reason": "全段讲解广告结构应满足的三个标准，没有指向具体屏幕内容。",
+      "watch_spans": []
     },
     {
       "index": 2,
@@ -320,7 +336,18 @@
           "anchor": "06:11"
         }
       ],
-      "analysis": "核心观点是通过整合Campaign和Ad Set来减少结构复杂度，让Meta获得更集中、更清晰的数据，从而改善学习和投放效果。"
+      "analysis": "核心观点是通过整合Campaign和Ad Set来减少结构复杂度，让Meta获得更集中、更清晰的数据，从而改善学习和投放效果。",
+      "speech_mode": "mixed",
+      "watch": true,
+      "watch_reason": "主体是结构原则讲解，但中段指向广告层级示意图，跳过画面会错过层级关系。",
+      "watch_spans": [
+        {
+          "t0": 371.0,
+          "t1": 394.0,
+          "label": "06:11–06:34",
+          "reason": "展示Campaign、Ad Set、图片、视频、文案和Ads之间的层级示意图。"
+        }
+      ]
     },
     {
       "index": 3,
@@ -457,7 +484,18 @@
           "anchor": "10:04"
         }
       ],
-      "analysis": "案例显示，随着账户规模扩大，集中式 Campaign 结构仍能维持较高的投放回报；拆分的主要依据是市场国家或产品，而不是账户规模。"
+      "analysis": "案例显示，随着账户规模扩大，集中式 Campaign 结构仍能维持较高的投放回报；拆分的主要依据是市场国家或产品，而不是账户规模。",
+      "speech_mode": "mixed",
+      "watch": true,
+      "watch_reason": "前段是目标选择的讲解，随后连续展示真实广告账户、Campaign数据和广告整合情况。",
+      "watch_spans": [
+        {
+          "t0": 434.0,
+          "t1": 604.0,
+          "label": "07:14–10:04",
+          "reason": "展示小型、中型和大型真实账户的市场划分、花费、转化价值、ROAS及Campaign内广告整合情况。"
+        }
+      ]
     },
     {
       "index": 4,
@@ -536,7 +574,11 @@
           "anchor": "11:22"
         }
       ],
-      "analysis": "该配置的核心是用 CBO 和多漏斗、多样化广告集中学习，在保持业务目标匹配的同时加速系统优化。"
+      "analysis": "该配置的核心是用 CBO 和多漏斗、多样化广告集中学习，在保持业务目标匹配的同时加速系统优化。",
+      "speech_mode": "lecture",
+      "watch": false,
+      "watch_reason": "讲解One Campaign、CBO、广告多样性和学习阶段等原则，没有具体屏幕演示。",
+      "watch_spans": []
     },
     {
       "index": 5,
@@ -652,7 +694,11 @@
           "anchor": "13:48"
         }
       ],
-      "analysis": "本段说明了多产品电商应如何按产品拆分广告结构，同时强调预算、转化量和机器学习稳定性决定结构复杂度。"
+      "analysis": "本段说明了多产品电商应如何按产品拆分广告结构，同时强调预算、转化量和机器学习稳定性决定结构复杂度。",
+      "speech_mode": "lecture",
+      "watch": false,
+      "watch_reason": "讲解多产品电商在Campaign、产品和广告组之间的配置逻辑，属于原则说明。",
+      "watch_spans": []
     },
     {
       "index": 6,
@@ -712,7 +758,11 @@
           "anchor": "15:18"
         }
       ],
-      "analysis": "该片段以宣传歌词形式集中强调AI在文案、页面、客服、自动化和视觉内容等营销环节的升级作用。"
+      "analysis": "该片段以宣传歌词形式集中强调AI在文案、页面、客服、自动化和视觉内容等营销环节的升级作用。",
+      "speech_mode": "promo",
+      "watch": false,
+      "watch_reason": "全段为AI营销、课程关注和服务能力相关的歌曲与宣传内容。",
+      "watch_spans": []
     }
   ],
   "terms": [
@@ -12622,5 +12672,13 @@
     "anchors_rejected_out_of_range": 0,
     "rejected_examples": []
   },
-  "status": "pending_human_review"
+  "status": "approved",
+  "review_audit": {
+    "decision": "approved",
+    "reviewer": "Keven (Human Operator)",
+    "timestamp": "2026-09-12 01:24:29",
+    "notes": "Reviewed and approveed via MediaLoom HITL Portal",
+    "promoted_skills": [],
+    "merged_kg_nodes_count": 0
+  }
 }

@@ -341,6 +341,11 @@ def emit_typed_distillation(
         lines.append(header)
         lines.append("")
         lines.append(f"{link or span}" + (f"  ·  {span}" if link else ""))
+        if getattr(segment, "watch", False):
+            reason = segment.watch_reason or segment.speech_mode or "demo"
+            lines.append(f"**建议看** — {reason}")
+        elif getattr(segment, "speech_mode", None):
+            lines.append(f"_Speech mode: {segment.speech_mode}_")
         if segment.boundary_distance is not None:
             lines.append(
                 f"[Boundary strength: {segment.boundary_distance:.3f} cosine distance]"

@@ -387,6 +387,65 @@ def index(
         )
 
 
+@main.command("tag-speech")
+@click.option(
+    "--proposal",
+    default=None,
+    help="Proposal filename or path. Defaults to every proposals/*.json missing speech_mode.",
+)
+@click.option("--output-dir", default=None, help="Repository root. Defaults to the current directory.")
+@click.option(
+    "--model",
+    default=None,
+    help="LLM for the speech-mode pass. Defaults to DISTILLATION_MODEL or gpt-5.6-luna.",
+)
+def tag_speech(proposal: str, output_dir: str, model: str):
+    """Label lecture vs screen-demo on an existing proposal without re-ingesting."""
+    import json
+
+    from agentloom_media.distillation.speech_mode import (
+        apply_speech_modes_to_proposal,
+        classify_speech_modes,
+    )
+    from agentloom_media.review.targets import media_id_from_source
+
+    repo_root = Path(output_dir) if output_dir else Path.cwd()
+    proposals_dir = repo_root / "proposals"
+    if proposal:
+        path = Path(proposal)
+        if not path.is_absolute():
+            path = proposals_dir / path.name if not path.exists() else path
+        targets = [path]
+    else:
+        targets = sorted(proposals_dir.glob("*.json"))
+
+    if not targets:
+        console.print("[red]No proposal files found.[/red]")
+        return
+
+    model = resolve_distillation_model(model)
+    for path in targets:
+        if not path.exists():
+            console.print(f"[red]Missing {path}[/red]")
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        source = payload.get("source") or {}
+        media_id = media_id_from_source(source)
+        cached = load_transcript(repo_root, media_id) if media_id else None
+        if not cached:
+            console.print(f"[red]{path.name}: no cached transcript for {media_id}[/red]")
+            continue
+        transcript = cached["transcript"]
+        modes = classify_speech_modes(payload.get("segments") or [], transcript.utterances, model=model)
+        updated = apply_speech_modes_to_proposal(payload, modes)
+        path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        watched = sum(1 for info in modes.values() if info.get("watch"))
+        console.print(
+            f"  [green]✓[/green] {path.name}: {updated} segments, {watched} marked watch "
+            f"({model})"
+        )
+
+
 @main.command()
 @click.option("--host", default="127.0.0.1", help="Host to bind the portal server to.")
 @click.option("--port", default=8000, type=int, help="Port to listen on.")

@@ -11,11 +11,20 @@ from agentloom_media.review.decisions import (
     review_path,
     summarize,
 )
-from agentloom_media.review.targets import build_review_items, coverage
+from agentloom_media.review.targets import (
+    build_legacy_review_items,
+    build_review_items,
+    coverage,
+    digest_path_for_proposal,
+    media_id_from_source,
+)
 
 __all__ = [
+    "build_legacy_review_items",
     "build_review_items",
     "coverage",
+    "digest_path_for_proposal",
+    "media_id_from_source",
     "current_decisions",
     "read_review",
     "record_decision",

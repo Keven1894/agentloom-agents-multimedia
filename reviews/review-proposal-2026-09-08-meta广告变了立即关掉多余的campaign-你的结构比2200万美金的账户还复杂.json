@@ -1,0 +1,37 @@
+{
+  "schema": "medialoom/review-decisions/v1",
+  "proposal_file": "proposal-2026-09-08-meta广告变了立即关掉多余的campaign-你的结构比2200万美金的账户还复杂.json",
+  "decisions": [
+    {
+      "kind": "key_point",
+      "target_id": "kp:0:543f1fb968",
+      "evidence_index": null,
+      "scope": "item",
+      "verdict": "accept",
+      "note": null,
+      "reviewer": "portal-user",
+      "timestamp": "2026-09-12T04:42:35.640757+00:00"
+    },
+    {
+      "kind": "key_point",
+      "target_id": "kp:0:cb461cea8d",
+      "evidence_index": null,
+      "scope": "item",
+      "verdict": "accept",
+      "note": null,
+      "reviewer": "portal-user",
+      "timestamp": "2026-09-12T04:42:42.217824+00:00"
+    },
+    {
+      "kind": "key_point",
+      "target_id": "kp:0:5fccc5f2b2",
+      "evidence_index": 0,
+      "scope": "evidence",
+      "verdict": "accept",
+      "note": null,
+      "reviewer": "portal-user",
+      "timestamp": "2026-09-12T04:43:31.021697+00:00"
+    }
+  ],
+  "updated_at": "2026-09-12T04:43:31.021697+00:00"
+}

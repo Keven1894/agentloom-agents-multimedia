@@ -26,6 +26,10 @@ from agentloom_media.search.embed import Embedder, embeddings_enabled
 
 logger = logging.getLogger("agentloom_media.jobs")
 
+JOB_SCHEMA = "medialoom/ingest-job/v1"
+MAX_PERSISTED_LOGS = 400
+LIVE_STATUSES = {"queued", "running"}
+
 
 class IngestJob:
     def __init__(
@@ -60,6 +64,7 @@ class IngestJob:
         self.started_at: Optional[str] = None
         self.completed_at: Optional[str] = None
         self._listeners: List[asyncio.Queue] = []
+        self._on_change = None
 
     def log(self, text: str):
         entry = {
@@ -78,6 +83,8 @@ class IngestJob:
         self.progress = progress
         self.message = message
         self.log(f"[{stage.upper()}] {message}")
+        if self._on_change:
+            self._on_change()
         self._broadcast({
             "type": "stage_update",
             "job_id": self.job_id,
@@ -127,11 +134,176 @@ class IngestJob:
             "log_count": len(self.logs),
         }
 
+    def to_record(self) -> Dict[str, Any]:
+        data = self.snapshot()
+        data["schema"] = JOB_SCHEMA
+        data["logs"] = self.logs[-MAX_PERSISTED_LOGS:]
+        return data
+
+    @classmethod
+    def from_record(cls, data: Dict[str, Any], output_dir: Path) -> "IngestJob":
+        job = cls(
+            job_id=str(data.get("job_id") or "job_unknown"),
+            url=str(data.get("url") or ""),
+            model=data.get("model"),
+            output_dir=output_dir,
+            route=data.get("route"),
+            asr_engine=data.get("asr_engine"),
+            synthesis_model=data.get("synthesis_model"),
+        )
+        job.status = str(data.get("status") or "queued")
+        job.stage = str(data.get("stage") or job.status)
+        job.progress = int(data.get("progress") or 0)
+        job.message = str(data.get("message") or "")
+        job.meta = data.get("meta") or {}
+        job.artifacts = data.get("artifacts") or {}
+        job.anchor_report = data.get("anchor_report")
+        job.transcript_provenance = data.get("transcript_provenance")
+        job.distillation_passes = data.get("distillation_passes")
+        job.error = data.get("error")
+        job.created_at = str(data.get("created_at") or job.created_at)
+        job.started_at = data.get("started_at")
+        job.completed_at = data.get("completed_at")
+        job.logs = list(data.get("logs") or [])
+        return job
+
+
+def job_from_proposal(path: Path, payload: Dict[str, Any], output_dir: Path) -> IngestJob:
+    """Rebuild a completed job snapshot from a proposal written by CLI ingest."""
+    source = payload.get("source") or {}
+    models = payload.get("models") or {}
+    provenance = payload.get("transcript_provenance") or {}
+    stamp = str(payload.get("timestamp") or "")
+    created = stamp.replace("T", " ")[:19] if stamp else datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    digest_name = path.name
+    if digest_name.startswith("proposal-") and digest_name.endswith(".json"):
+        digest_name = digest_name[len("proposal-") : -len(".json")] + ".md"
+    digest_path = output_dir / "docs" / "digests" / digest_name
+
+    return IngestJob.from_record(
+        {
+            "job_id": f"job_imported_{path.stem}",
+            "url": source.get("url") or "",
+            "model": models.get("distillation") or payload.get("model"),
+            "synthesis_model": models.get("synthesis"),
+            "status": "completed",
+            "stage": "completed",
+            "progress": 100,
+            "message": "Imported from an existing proposal (CLI or earlier ingest).",
+            "meta": {
+                "id": source.get("media_id"),
+                "title": source.get("title"),
+                "channel": source.get("channel"),
+                "url": source.get("url"),
+            },
+            "artifacts": {
+                "agentloom_proposal": str(path),
+                **({"track2_digest": str(digest_path)} if digest_path.exists() else {}),
+            },
+            "route": provenance.get("route"),
+            "asr_engine": provenance.get("engine"),
+            "transcript_provenance": provenance or None,
+            "distillation_passes": payload.get("passes"),
+            "anchor_report": payload.get("anchor_validation"),
+            "created_at": created,
+            "completed_at": created,
+            "logs": [
+                {
+                    "time": created[11:] if len(created) >= 19 else "",
+                    "text": "Imported from proposal on disk. This ingest was not started from the portal.",
+                }
+            ],
+        },
+        output_dir,
+    )
+
 
 class JobManager:
     def __init__(self, workspace_root: Optional[Path] = None):
         self.workspace_root = workspace_root or Path.cwd()
         self.jobs: Dict[str, IngestJob] = {}
+        self._loaded = False
+        if workspace_root is not None:
+            self._load()
+
+    def jobs_dir(self) -> Path:
+        return Path(self.workspace_root) / "data" / "jobs"
+
+    def attach(self, workspace_root: Path) -> None:
+        """Point at the repo and load any jobs written by a previous portal process."""
+        self.workspace_root = Path(workspace_root)
+        self._load()
+
+    def _job_path(self, job_id: str) -> Path:
+        safe = "".join(c if c.isalnum() or c in "._-" else "-" for c in job_id)
+        return self.jobs_dir() / f"{safe}.json"
+
+    def persist(self, job: IngestJob) -> None:
+        path = self._job_path(job.job_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(job.to_record(), ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(path)
+
+    def _load(self) -> None:
+        if self._loaded:
+            return
+        self._loaded = True
+        folder = self.jobs_dir()
+        if folder.exists():
+            for path in folder.glob("*.json"):
+                try:
+                    data = json.loads(path.read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError):
+                    continue
+                if not isinstance(data, dict) or not data.get("job_id"):
+                    continue
+                job = IngestJob.from_record(data, self.workspace_root)
+                if job.status in LIVE_STATUSES:
+                    job.status = "interrupted"
+                    job.stage = "interrupted"
+                    job.error = (
+                        "Portal restarted while this job was still running. "
+                        "Re-submit the URL to finish it."
+                    )
+                    job.message = job.error
+                    job.completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    job.logs.append({
+                        "time": datetime.now().strftime("%H:%M:%S"),
+                        "text": job.error,
+                    })
+                    self.persist(job)
+                job._on_change = lambda j=job: self.persist(j)
+                self.jobs[job.job_id] = job
+        self._import_proposals()
+
+    def _known_proposal_names(self) -> set:
+        names = set()
+        for job in self.jobs.values():
+            artifact = str((job.artifacts or {}).get("agentloom_proposal") or "")
+            if artifact:
+                names.add(Path(artifact).name)
+        return names
+
+    def _import_proposals(self) -> None:
+        """CLI ingest writes a proposal but never a JobManager row. Surface those too."""
+        proposals_dir = Path(self.workspace_root) / "proposals"
+        if not proposals_dir.exists():
+            return
+        known = self._known_proposal_names()
+        for path in sorted(proposals_dir.glob("*.json")):
+            if path.name in known:
+                continue
+            try:
+                payload = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            if not isinstance(payload, dict):
+                continue
+            job = job_from_proposal(path, payload, self.workspace_root)
+            job._on_change = lambda j=job: self.persist(j)
+            self.jobs[job.job_id] = job
+            self.persist(job)
 
     def create_job(
         self,
@@ -142,6 +314,7 @@ class JobManager:
         asr_engine: Optional[str] = None,
         synthesis_model: Optional[str] = None,
     ) -> IngestJob:
+        self._load()
         job_id = f"job_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
         job = IngestJob(
             job_id=job_id,
@@ -153,12 +326,16 @@ class JobManager:
             synthesis_model=synthesis_model,
         )
         self.jobs[job_id] = job
+        job._on_change = lambda: self.persist(job)
+        self.persist(job)
         return job
 
     def get_job(self, job_id: str) -> Optional[IngestJob]:
+        self._load()
         return self.jobs.get(job_id)
 
     def list_jobs(self) -> List[Dict[str, Any]]:
+        self._load()
         return [j.snapshot() for j in sorted(self.jobs.values(), key=lambda x: x.created_at, reverse=True)]
 
     async def run_job(self, job: IngestJob):
@@ -278,7 +455,7 @@ class JobManager:
             # Completion
             job.status = "completed"
             job.completed_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            job.update_stage("completed", 100, "Ingestion and distillation completed! Ready for Human Review.")
+            job.update_stage("completed", 100, "Ingestion and distillation completed. Ready for overview and evidence review.")
 
         except Exception as e:
             logger.exception(f"Job {job.job_id} failed: {e}")
@@ -293,6 +470,8 @@ class JobManager:
                 "error": str(e),
                 "status": "failed"
             })
+            if job._on_change:
+                job._on_change()
 
 
 # Global job manager singleton
